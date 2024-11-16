@@ -1,50 +1,61 @@
-from typing import Any
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
 from django import forms
-from .models import Record
-
-from django.contrib.auth.forms import UserCreationForm
-from .models import CustomUser
-from django import forms
+from .models import Record, CustomUser
 
 class SignUpForm(UserCreationForm):
-                class Meta:
-                    model = CustomUser
-                    fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
+    username = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username'}))
+    first_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}))
+    last_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}))
+    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email Address'}))
+    password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'}))
+    password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm Password'}))
 
-                def __init__(self, *args, **kwargs):
-                    super(SignUpForm, self).__init__(*args, **kwargs)
+    class Meta:
+        model = CustomUser
+        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
 
-                    self.fields['username'].widget.attrs['class'] = 'form-control'
-                    self.fields['username'].widget.attrs['placeholder'] = 'User Name'
-                    self.fields['username'].label = ''
-                    self.fields['username'].help_text = '<span class="form-text text-muted"><small>Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.</small></span>'
+class SignUpForm(forms.ModelForm):
+    username = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username'}))
+    first_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}))
+    last_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}))
+    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email Address'}))
+    password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'}))
+    password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm Password'}))
 
-                    self.fields['password1'].widget.attrs['class'] = 'form-control'
-                    self.fields['password1'].widget.attrs['placeholder'] = 'Password'
-                    self.fields['password1'].label = ''
-                    self.fields['password1'].help_text = '<ul class="form-text text-muted small"><li>Your password can\'t be too similar to your other personal information.</li><li>Your password must contain at least 8 characters.</li><li>Your password can\'t be a commonly used password.</li><li>Your password can\'t be entirely numeric.</li></ul>'
+    class Meta:
+        model = CustomUser
+        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
 
-                    self.fields['password2'].widget.attrs['class'] = 'form-control'
-                    self.fields['password2'].widget.attrs['placeholder'] = 'Confirm Password'
-                    self.fields['password2'].label = ''
-                    self.fields['password2'].help_text = '<span class="form-text text-muted"><small>Enter the same password as before, for verification.</small></span>'
-
-
-
-
-# Create Add Record Form
 class AddRecordForm(forms.ModelForm):
-    first_name = forms.CharField(required=True, widget=forms.widgets.TextInput(attrs={"placeholder":"First Name", "class":"form-control"}), label="")
-    last_name = forms.CharField(required=True, widget=forms.widgets.TextInput(attrs={"placeholder":"Last Name", "class":"form-control"}), label="")
-    email = forms.CharField(required=True, widget=forms.widgets.TextInput(attrs={"placeholder":"Email", "class":"form-control"}), label="")
-    phone = forms.CharField(required=True, widget=forms.widgets.TextInput(attrs={"placeholder":"Phone", "class":"form-control"}), label="")
-    address = forms.CharField(required=True, widget=forms.widgets.TextInput(attrs={"placeholder":"Address", "class":"form-control"}), label="")
-    city = forms.CharField(required=True, widget=forms.widgets.TextInput(attrs={"placeholder":"City", "class":"form-control"}), label="")
-    state = forms.CharField(required=True, widget=forms.widgets.TextInput(attrs={"placeholder":"State", "class":"form-control"}), label="")
-    zipcode = forms.CharField(required=True, widget=forms.widgets.TextInput(attrs={"placeholder":"Zipcode", "class":"form-control"}), label="")
-
     class Meta:
         model = Record
         exclude = ("user",)
+        widgets = {
+            'transaction_type': forms.Select(choices=Record.TRANSACTION_TYPE_CHOICES, attrs={'class': 'form-control'}),
+            'item_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Item Name'}),
+            'item_type': forms.Select(choices=Record.ITEM_TYPE_CHOICES, attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Item Specification/Description'}),
+            'project': forms.Select(choices=Record.PROJECT_CHOICES, attrs={'class': 'form-control'}),
+            'location': forms.Select(choices=Record.LOCATION_CHOICES, attrs={'class': 'form-control'}),
+            'requester': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Requester'}),
+            'unit_measure': forms.Select(choices=Record.UNIT_MEASURE_CHOICES, attrs={'class': 'form-control'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Quantity'}),
+            'unit_price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Unit Price (AFN)', 'step': '0.01'}),
+            'total_value': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Total Value (AFN)', 'step': '0.01', 'readonly': 'readonly'}),
+            'date': forms.DateField(
+                widget=forms.DateInput(
+                    attrs={
+                        'type': 'date',
+                        'class': 'form-control date-picker'
+                    }
+                )
+            ),
+            'reviewer': forms.Select(choices=Record.REVIEWER_CHOICES, attrs={'class': 'form-control'}),
+            'reviewer_result': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Reviewers Result'}),
+            'approval': forms.Select(choices=Record.APPROVAL_CHOICES, attrs={'class': 'form-control'}),
+            'cashier_status': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Cashier Status'}),
+            'comments': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Suggestions and Comments'}),
+        }
+    class Meta:
+        model = Record
+        exclude = ("user",) 

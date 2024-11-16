@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load form_tags %}
 
 {% block head %}
 <style>
@@ -11,6 +12,86 @@
         background-attachment: fixed;
     }
 
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .table th, .table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* Fixed widths for specific columns */
+    .table th:nth-child(1), .table td:nth-child(1) { width: 120px; } /* Transaction Type */
+    .table th:nth-child(2), .table td:nth-child(2) { width: 150px; } /* Item Name */
+    .table th:nth-child(3), .table td:nth-child(3) { width: 100px; } /* Item Type */
+    .table th:nth-child(4), .table td:nth-child(4) { width: 200px; } /* Description */
+    .table th:nth-child(5), .table td:nth-child(5) { width: 120px; } /* Project */
+    .table th:nth-child(6), .table td:nth-child(6) { width: 100px; } /* Location */
+    .table th:nth-child(7), .table td:nth-child(7) { width: 120px; } /* Requester */
+    .table th:nth-child(8), .table td:nth-child(8) { width: 100px; } /* Unit Measure */
+    .table th:nth-child(9), .table td:nth-child(9) { width: 80px; } /* Quantity */
+    .table th:nth-child(10), .table td:nth-child(10) { width: 100px; } /* Unit Price */
+    .table th:nth-child(11), .table td:nth-child(11) { width: 100px; } /* Total Value */
+    .table th:nth-child(12), .table td:nth-child(12) { width: 100px; } /* Date */
+    .table th:nth-child(13), .table td:nth-child(13) { width: 120px; } /* Reviewer */
+    .table th:nth-child(14), .table td:nth-child(14) { width: 100px; } /* Result */
+    .table th:nth-child(15), .table td:nth-child(15) { width: 100px; } /* Approval */
+    .table th:nth-child(16), .table td:nth-child(16) { width: 100px; } /* Status */
+    .table th:nth-child(17), .table td:nth-child(17) { width: 150px; } /* Comments */
+
+    /* Table cell content handling */
+    .table td {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px; /* Adjust as needed */
+    }
+
+    /* Add hover effect to see full content */
+    .table td:hover {
+        white-space: normal;
+        overflow: visible;
+        background-color: #f8f9fa;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Responsive breakpoints */
+    @media (max-width: 1400px) {
+        .table td {
+            max-width: 150px;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .table td {
+            max-width: 120px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .table td {
+            max-width: 100px;
+        }
+    }
+
+    /* Optional: Add horizontal scroll indicator */
+    .scroll-indicator {
+        display: none;
+        text-align: center;
+        padding: 10px;
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    @media (max-width: 1200px) {
+        .scroll-indicator {
+            display: block;
+        }
+    }
+
     .animated-text {
         font-size: 2.5rem;
         color: #ffffff;
@@ -19,94 +100,319 @@
         position: relative;
     }
 
-    @media (max-width: 768px) {
-        .animated-text {
-            font-size: 1.8rem;
-            transform: translateY(100px);
-        }
+    /* Sliding Panel Styles */
+    .sliding-panel {
+        position: fixed;
+        top: 0;
+        right: -500px;
+        width: 500px;
+        height: 100%;
+        background-color: #fff;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+        transition: right 0.3s ease-in-out;
+        z-index: 1000;
     }
 
-    @media (min-width: 769px) {
-        .animated-text {
-            transform: translateX(100px);
-        }
+    .sliding-panel.open {
+        right: 0;
+    }
+
+    .panel-content {
+        padding: 30px 0;
+        height: 100%;
+        overflow-y: auto;
+    }
+
+    .panel-content h2 {
+        color: #333;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 30px;
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+        transition: color 0.3s;
+    }
+
+    .close-btn:hover {
+        color: #dc3545;
+    }
+
+    /* Form Styles */
+    .form-control, select {
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 5px;
+        transition: border-color 0.3s, box-shadow 0.3s;
+        width: 100%;
+        background-color: white;
+    }
+
+    .form-control:focus, select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        outline: none;
+    }
+
+    select {
+        appearance: auto;
+        -webkit-appearance: auto;
+        -moz-appearance: auto;
+        height: 42px;
+    }
+
+    select option {
+        padding: 10px;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 5px;
+    }
+
+    .form-text {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-top: 5px;
+    }
+
+    /* Error Styles */
+    .is-invalid {
+        border-color: #dc3545;
+    }
+
+    .invalid-feedback {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 5px;
+    }
+
+    /* Button Styles */
+    .btn-primary {
+        background-color: #007bff;
+        border: none;
+        padding: 12px;
+        transition: background-color 0.3s;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border: none;
+        padding: 12px;
+    }
+
+    .btn-secondary:hover {
+        background-color: #545b62;
+    }
+
+    /* Scrollbar Styles */
+    .panel-content::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .panel-content::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .panel-content::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .panel-content::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Date Picker Styles */
+    input[type="date"] {
+        position: relative;
+        padding: 10px;
+        color: #333;
+        font-size: 16px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: white;
+        cursor: pointer;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        position: absolute;
+        right: 10px;
+        padding: 5px;
+        cursor: pointer;
+        opacity: 0.6;
+        filter: invert(0.8);
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+    }
+
+    /* Hover effect */
+    input[type="date"]:hover {
+        border-color: #007bff;
+    }
+
+    /* Focus effect */
+    input[type="date"]:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        outline: none;
     }
 </style>
 {% endblock %}
-{% block content %}
 
+{% block content %}
 {% if user.is_authenticated %}
-    <h1>Records...</h1>
-    <table class="table table-striped table-hover table-bordered">
-        <thead class="table-dark">
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Email</th>
-            <th scope="col">Phone</th>
-            <th scope="col">Address</th>
-            <th scope="col">City</th>
-            <th scope="col">State</th>
-            <th scope="col">Zipcode</th>
-            <th scope="col">Created At</th>
-            <th scope="col">ID</th>       
-          </tr>
-        </thead>
-        <tbody>
-          
-    {% if records %}
-        {% for record in records %}
-        <tr>
-            <td><a href="{% url 'record' record.id %}">{{ record.first_name }}
-            {{ record.last_name }}</a></td>
-            <td>{{ record.email }}</td>
-            <td>{{ record.phone }}</td>
-            <td>{{ record.address }}</td>
-            <td>{{ record.city }}</td>
-            <td>{{ record.state }}</td>
-            <td>{{ record.zipcode }}</td>
-            <td>{{ record.created_at }}</td>
-            <td><a href="{% url 'record' record.id %}"> {{ record.id }}</a></td>
-        </tr>
-            <br/><br/>
-        {% endfor %}
-        
-    {% endif %}
-          </tr>
-        </tbody>
-    </table>        
+    <h1>Financial Records</h1>
+    <div class="scroll-indicator">
+        <i class="fas fa-arrows-left-right"></i> Scroll horizontally to view more
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Transaction Type</th>
+                    <th>Item Name</th>
+                    <th>Item Type</th>
+                    <th>Description</th>
+                    <th>Project</th>
+                    <th>Location</th>
+                    <th>Requester</th>
+                    <th>Unit Measure</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Total Value</th>
+                    <th>Date</th>
+                    <th>Reviewer</th>
+                    <th>Result</th>
+                    <th>Approval</th>
+                    <th>Status</th>
+                    <th>Comments</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% if records %}
+                {% for record in records %}
+                <tr>
+                    <td>{{ record.transaction_type }}</td>
+                    <td>{{ record.item_name }}</td>
+                    <td>{{ record.item_type }}</td>
+                    <td>{{ record.description }}</td>
+                    <td>{{ record.project }}</td>
+                    <td>{{ record.location }}</td>
+                    <td>{{ record.requester }}</td>
+                    <td>{{ record.unit_measure }}</td>
+                    <td>{{ record.quantity }}</td>
+                    <td>{{ record.unit_price }}</td>
+                    <td>{{ record.total_value }}</td>
+                    <td>{{ record.date }}</td>
+                    <td>{{ record.reviewer }}</td>
+                    <td>{{ record.reviewer_result }}</td>
+                    <td>{{ record.approval }}</td>
+                    <td>{{ record.cashier_status }}</td>
+                    <td>{{ record.comments }}</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
 {% else %}
     <h1 class="animated-text text-center mt-5">NSDO Financial Control System</h1>
-    <div class="col-md-6 offset-md3"></div>
-    <h1>Login</h1>
-    <br/>
-
-    <form method="POST" action="{% url 'home' %}">
-        {% csrf_token %}
-       
+    <div class="col-md-6 offset-md3">
+        <h1>Login</h1>
+        <br/>
+        <form method="POST" action="{% url 'home' %}">
+            {% csrf_token %}
             <div class="mb-3">
-            <input type="text" class="form-control" name="username", placeholder="Username" required>
-            </div><br/>
+                <input type="text" class="form-control" name="username" placeholder="Username" required>
+            </div>
+            <br/>
             <div class="mb-3">
-            <input type="password" class="form-control" name="password", placeholder="Password" required>
+                <input type="password" class="form-control" name="password" placeholder="Password" required>
             </div>
             <br/>
             <button type="submit" class="btn btn-secondary">Login</button>
-          
-    </form>
+        </form>
+    </div>
 {% endif %}
 
-{% endblock %}
+<!-- Sliding Panel -->
+<div id="addRecordPanel" class="sliding-panel">
+    <div class="panel-content">
+        <span class="close-btn" onclick="closePanel()">&times;</span>
+        <h2 class="text-center mb-4">Add Financial Record</h2>
+        <form method="post" action="{% url 'add_record' %}" id="addRecordForm" class="px-3">
+            {% csrf_token %}
+            {% if form %}
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">
+                            {{ field.label }}
+                            {% if field.field.required %}
+                                <span class="text-danger">*</span>
+                            {% endif %}
+                        </label>
+                        {% if field.field.widget.input_type == 'select' or field|fieldtype == 'select' %}
+                            {{ field }}
+                        {% elif field.name == 'date' %}
+                            <input type="date" 
+                                name="{{ field.name }}"
+                                id="{{ field.id_for_label }}"
+                                class="form-control date-picker {% if field.errors %}is-invalid{% endif %}"
+                                {% if field.value %}value="{{ field.value|date:'Y-m-d' }}"{% endif %}>
+                        {% else %}
+                            <input type="{{ field.field.widget.input_type }}" 
+                                name="{{ field.name }}"
+                                id="{{ field.id_for_label }}"
+                                class="form-control {% if field.errors %}is-invalid{% endif %}"
+                                {% if field.value %}value="{{ field.value }}"{% endif %}
+                                placeholder="{{ field.label }}">
+                        {% endif %}
+                        {% if field.errors %}
+                            <div class="invalid-feedback">
+                                {{ field.errors }}
+                            </div>
+                        {% endif %}
+                        {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">Submit Record</button>
+                <button type="button" class="btn btn-secondary" onclick="closePanel()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-{% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const text = document.querySelector('.animated-text');
-        if (text) {
-            text.style.transition = 'all 1s ease-out';
-            setTimeout(() => {
-                text.style.opacity = '1';
-                text.style.transform = 'translate(0)';
-            }, 500);
+    function openPanel() {
+        document.getElementById('addRecordPanel').classList.add('open');
+    }
+
+    function closePanel() {
+        document.getElementById('addRecordPanel').classList.remove('open');
+    }
+
+    document.querySelector('.table-responsive').addEventListener('wheel', (e) => {
+        if (e.deltaY !== 0) {
+            e.preventDefault();
+            this.scrollLeft += e.deltaY;
         }
     });
 </script>

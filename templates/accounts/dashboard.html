@@ -1,0 +1,57 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2>Welcome, {{ user.get_full_name|default:user.username }}</h2>
+        <p>Role: {{ user_type }}</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    {% if user.user_type == 'cashier' %}
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">My Transactions</h5>
+                    <h2>{{ my_transactions }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Approval</h5>
+                    <h2>{{ pending_transactions }}</h2>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Approvals</h5>
+                    <h2>{{ pending_approvals }}</h2>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Total Transactions</h5>
+                <h2>{{ total_transactions }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <a href="{% url 'transaction_list' %}" class="btn btn-primary">View Transactions</a>
+        {% if user.user_type == 'cashier' %}
+            <a href="{% url 'create_transaction' %}" class="btn btn-success">Create Transaction</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

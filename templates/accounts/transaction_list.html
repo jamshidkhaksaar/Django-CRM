@@ -1,0 +1,38 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+    {% if user.user_type == 'cashier' %}
+        <a href="{% url 'create_transaction' %}" class="btn btn-primary mb-3">Create Transaction</a>
+    {% endif %}
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Amount</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Created By</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
+                <tr>
+                    <td>${{ transaction.amount }}</td>
+                    <td>{{ transaction.description }}</td>
+                    <td>{{ transaction.get_status_display }}</td>
+                    <td>{{ transaction.created_by.username }}</td>
+                    <td>
+                        {% if user.user_type == 'deputy_director' and transaction.status == 'pending' %}
+                            <a href="{% url 'approve_transaction' transaction.pk %}" class="btn btn-success btn-sm">Approve</a>
+                        {% elif user.user_type == 'executive_director' and transaction.status == 'first_approval' %}
+                            <a href="{% url 'approve_transaction' transaction.pk %}" class="btn btn-success btn-sm">Approve</a>
+                        {% elif user.user_type == 'chief_executive' and transaction.status == 'second_approval' %}
+                            <a href="{% url 'approve_transaction' transaction.pk %}" class="btn btn-success btn-sm">Final Approve</a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

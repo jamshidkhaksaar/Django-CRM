@@ -1,36 +1,84 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="card">
-    <div class="card-header"><strong>
-            {{ customer_record.first_name }} 
-            {{ customer_record.last_name }}</strong>
-    </div>
-    <div class="card-body">
-      <p class="card-text">
-        <strong>Email: </strong>{{ customer_record.email }}<br/></p>
-        <p class="card-text">
-        <strong>Phone: </strong>{{ customer_record.phone }}<br/></p>
-        <p class="card-text">
-        <strong>Address: </strong>{{ customer_record.address }}<br/></p>
-        <p class="card-text">
-        <strong>City: </strong>{{ customer_record.city }}<br/></p>
-        <p class="card-text">
-        <strong>State: </strong>{{ customer_record.state }}<br/></p>
-        <p class="card-text">
-        <strong>Zipcode: </strong>{{ customer_record.zipcode }}<br/></p>
-        <p class="card-text">
-        <strong>Date Created: </strong>{{ customer_record.created_at }}<br/></p>
-        <p class="card-text">
-        <strong>ID: </strong>{{ customer_record.id }}<br/></p>
-      </p>
+<div class="side-panel" id="recordPanel">
+    <div class="panel-content">
+        <div class="panel-header">
+            <h2>Add Financial Record</h2>
+            <button class="close-btn" onclick="closePanel()">×</button>
+        </div>
+        
+        <form method="POST" action="{% url 'add_record' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                {{ form.transaction_type }}
+                {{ form.item_name }}
+                {{ form.item_type }}
+                {{ form.description }}
+                {{ form.project }}
+                {{ form.location }}
+                {{ form.requester }}
+                {{ form.unit_measure }}
+                {{ form.quantity }}
+                {{ form.unit_price }}
+                {{ form.total_value }}
+                {{ form.date }}
+                {{ form.reviewer }}
+                {{ form.reviewer_result }}
+                {{ form.approval }}
+                {{ form.cashier_status }}
+                {{ form.comments }}
+            </div>
+            <button type="submit" class="btn btn-primary">Save Record</button>
+        </form>
     </div>
 </div>
-<br/><br/>
-<a href="{% url 'home' %}" class="btn btn-secondary">Back</a>
 
-<a href="{% url 'delete_record' customer_record.id %}" class="btn btn-danger">Delete</a>
+<style>
+.side-panel {
+    position: fixed;
+    right: -100%;
+    top: 0;
+    width: 40%;
+    height: 100%;
+    background: white;
+    box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+    transition: right 0.3s ease;
+    z-index: 1000;
+    overflow-y: auto;
+}
 
-<a href="{% url 'update_record' customer_record.id %}" class="btn btn-secondary">Update Record</a>
+.panel-content {
+    padding: 20px;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.close-btn {
+    border: none;
+    background: none;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.side-panel.open {
+    right: 0;
+}
+</style>
+
+<script>
+function openPanel() {
+    document.getElementById('recordPanel').classList.add('open');
+}
+
+function closePanel() {
+    document.getElementById('recordPanel').classList.remove('open');
+}
+</script>
 
 {% endblock %}
