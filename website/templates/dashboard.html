@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+{% if user.is_authenticated %}
+    <div class="container-fluid mt-4">
+        <h1 class="mb-4">Dashboard</h1>
+        
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Records</h5>
+                        <h2 class="card-text">{{ total_records }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Approved Records</h5>
+                        <h2 class="card-text">{{ approved_count }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Pending Records</h5>
+                        <h2 class="card-text">{{ pending_count }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Rejected Records</h5>
+                        <h2 class="card-text">{{ rejected_count }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row">
+            <!-- Status Distribution Chart -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Status Distribution</h5>
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Transactions Chart -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Monthly Transactions</h5>
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Second Row of Charts -->
+        <div class="row">
+            <!-- Transaction Types Chart -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Transaction Types</h5>
+                        <canvas id="transactionTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Value by Project Chart -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Value by Project</h5>
+                        <canvas id="projectValueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Status Distribution Chart
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        new Chart(statusCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Approved', 'Pending', 'Rejected'],
+                datasets: [{
+                    data: [{{ approved_count }}, {{ pending_count }}, {{ rejected_count }}],
+                    backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+                }]
+            }
+        });
+
+        // Monthly Transactions Chart
+        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+        new Chart(monthlyCtx, {
+            type: 'line',
+            data: {
+                labels: {{ monthly_labels|safe }},
+                datasets: [{
+                    label: 'Number of Transactions',
+                    data: {{ monthly_data }},
+                    borderColor: '#007bff',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Transaction Types Chart
+        const transactionTypeCtx = document.getElementById('transactionTypeChart').getContext('2d');
+        new Chart(transactionTypeCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ transaction_types_labels|safe }},
+                datasets: [{
+                    label: 'Number of Transactions',
+                    data: {{ transaction_types_data }},
+                    backgroundColor: '#17a2b8'
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Project Value Chart
+        const projectValueCtx = document.getElementById('projectValueChart').getContext('2d');
+        new Chart(projectValueCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ project_labels|safe }},
+                datasets: [{
+                    label: 'Total Value',
+                    data: {{ project_values }},
+                    backgroundColor: '#6f42c1'
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+
+    <style>
+        .card {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            border: none;
+            border-radius: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        canvas {
+            max-height: 300px;
+        }
+
+        /* Statistics Cards */
+        .bg-primary {
+            background: linear-gradient(45deg, #007bff, #0056b3) !important;
+        }
+
+        .bg-success {
+            background: linear-gradient(45deg, #28a745, #1e7e34) !important;
+        }
+
+        .bg-warning {
+            background: linear-gradient(45deg, #ffc107, #d39e00) !important;
+        }
+
+        .bg-danger {
+            background: linear-gradient(45deg, #dc3545, #bd2130) !important;
+        }
+    </style>
+{% endif %}
+{% endblock %} 

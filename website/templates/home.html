@@ -104,13 +104,16 @@
     .sliding-panel {
         position: fixed;
         top: 0;
-        right: -500px;
-        width: 500px;
+        right: -100%;
+        width: 100%;
+        max-width: 500px;
         height: 100%;
-        background-color: #fff;
+        background-color: white;
         box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
         transition: right 0.3s ease-in-out;
-        z-index: 1000;
+        z-index: 1050;
+        overflow-y: auto;
+        padding: 20px;
     }
 
     .sliding-panel.open {
@@ -118,30 +121,36 @@
     }
 
     .panel-content {
-        padding: 30px 0;
-        height: 100%;
-        overflow-y: auto;
-    }
-
-    .panel-content h2 {
-        color: #333;
-        border-bottom: 2px solid #007bff;
-        padding-bottom: 10px;
-        margin-bottom: 30px;
+        padding: 20px;
     }
 
     .close-btn {
         position: absolute;
-        top: 15px;
-        right: 20px;
+        top: 10px;
+        right: 15px;
         font-size: 24px;
         cursor: pointer;
         color: #666;
-        transition: color 0.3s;
     }
 
     .close-btn:hover {
-        color: #dc3545;
+        color: #333;
+    }
+
+    /* Form Styles */
+    .sliding-panel form {
+        margin-top: 20px;
+    }
+
+    .sliding-panel .form-control {
+        margin-bottom: 15px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+        .sliding-panel {
+            max-width: 100%;
+        }
     }
 
     /* Form Styles */
@@ -270,150 +279,957 @@
         box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
         outline: none;
     }
+
+    /* Search Form Styles */
+    .search-form {
+        margin-bottom: 20px;
+    }
+
+    .search-form .input-group {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .search-form .form-control,
+    .search-form .form-select {
+        border: 1px solid #ddd;
+        padding: 10px 15px;
+        height: 45px;
+    }
+
+    .search-form .form-control:focus,
+    .search-form .form-select:focus {
+        border-color: #007bff;
+        box-shadow: none;
+    }
+
+    .search-form .btn {
+        padding: 10px 20px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .search-form .btn i {
+        font-size: 14px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .search-form .input-group {
+            flex-wrap: wrap;
+        }
+        
+        .search-form .form-control,
+        .search-form .form-select,
+        .search-form .btn {
+            width: 100%;
+            margin: 5px 0;
+            border-radius: 5px !important;
+        }
+    }
+
+    /* Column Filter Styles */
+    .filters th {
+        padding: 5px;
+        background-color: #f8f9fa;
+    }
+
+    .column-filter {
+        width: 100%;
+        padding: 6px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+
+    .column-filter:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    /* Make dropdowns more compact */
+    .filters select.form-select {
+        padding: 0.25rem 2rem 0.25rem 0.5rem;
+        height: auto;
+    }
+
+    /* Style for active filters */
+    .column-filter option:checked {
+        background-color: #007bff;
+        color: white;
+    }
+
+    /* Add these styles to your existing CSS */
+    .table th:first-child,
+    .table td:first-child {
+        width: 50px;
+        min-width: 50px;
+        background-color: #f8f9fa;
+        position: sticky;
+        left: 0;
+        z-index: 1;
+    }
+
+    .table th:first-child {
+        z-index: 2;  /* Higher z-index to stay above other headers */
+    }
+
+    /* Optional: Add border to make it stand out */
+    .table th:first-child,
+    .table td:first-child {
+        border-right: 2px solid #dee2e6;
+    }
+
+    /* Optional: Add hover effect */
+    .table tr:hover td:first-child {
+        background-color: #e9ecef;
+    }
+
+    /* Add Record Button Style */
+    .custom-btn {
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+        margin: 0 10px;
+    }
+
+    .custom-btn:hover {
+        background: linear-gradient(45deg, #0056b3, #004085);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    /* Add this at the end of your style section */
+    @media (max-width: 991px) {
+        .custom-btn {
+            margin: 10px 0;
+            width: 100%;
+        }
+    }
+
+    /* Add styles for the clear filters button */
+    #clearColumnFilters {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        padding: 8px 16px;
+        transition: all 0.3s ease;
+    }
+
+    #clearColumnFilters:hover {
+        background: linear-gradient(45deg, #20c997, #28a745);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    #clearColumnFilters i {
+        margin-right: 5px;
+    }
+
+    /* Add animation for the button */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .fade-in {
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    /* Widget Styles */
+    .widgets-container {
+        position: sticky;
+        top: 20px;
+    }
+
+    .widget {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .widget:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .widget-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 1.5rem;
+    }
+
+    .widget-content {
+        flex-grow: 1;
+    }
+
+    .widget-content h3 {
+        margin: 0;
+        font-size: 1rem;
+        color: #666;
+    }
+
+    .widget-value {
+        margin: 5px 0 0;
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+
+    /* Income Widget */
+    .income-widget {
+        border-left: 4px solid #28a745;
+    }
+
+    .income-widget .widget-icon {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+
+    /* Expense Widget */
+    .expense-widget {
+        border-left: 4px solid #dc3545;
+    }
+
+    .expense-widget .widget-icon {
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+
+    /* Advance Widget */
+    .advance-widget {
+        border-left: 4px solid #17a2b8;
+    }
+
+    .advance-widget .widget-icon {
+        background: rgba(23, 162, 184, 0.1);
+        color: #17a2b8;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 991px) {
+        .widgets-container {
+            margin-top: 20px;
+            position: static;
+        }
+        
+        .widget {
+            margin-bottom: 15px;
+        }
+    }
+
+    /* Container adjustments */
+    .container-fluid {
+        padding-left: 0;  /* Remove left padding */
+        max-width: 1800px; /* Adjust maximum width as needed */
+    }
+
+    /* Widget section title */
+    .widget-section-title {
+        color: #495057;
+        font-size: 1.25rem;
+        font-weight: 600;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    /* Widgets Container */
+    .widgets-container {
+        position: sticky;
+        top: 20px;
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.05);
+    }
+
+    /* Individual Widget */
+    .widget {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .widget:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .widget:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Widget Icon */
+    .widget-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    /* Widget Content */
+    .widget-content {
+        flex-grow: 1;
+    }
+
+    .widget-content h3 {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .widget-value {
+        margin: 5px 0 0;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #212529;
+    }
+
+    /* Income Widget */
+    .income-widget {
+        border-left: 4px solid #28a745;
+    }
+
+    .income-widget .widget-icon {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+
+    .income-widget .widget-value {
+        color: #28a745;
+    }
+
+    /* Expense Widget */
+    .expense-widget {
+        border-left: 4px solid #dc3545;
+    }
+
+    .expense-widget .widget-icon {
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+
+    .expense-widget .widget-value {
+        color: #dc3545;
+    }
+
+    /* Advance Widget */
+    .advance-widget {
+        border-left: 4px solid #17a2b8;
+    }
+
+    .advance-widget .widget-icon {
+        background: rgba(23, 162, 184, 0.1);
+        color: #17a2b8;
+    }
+
+    .advance-widget .widget-value {
+        color: #17a2b8;
+    }
+
+    /* Table Responsive adjustments */
+    .table-responsive {
+        margin-right: 15px;  /* Add some space between table and widgets */
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 991px) {
+        .widgets-container {
+            margin-top: 20px;
+            position: static;
+            margin-left: 15px;  /* Add left margin on mobile */
+        }
+        
+        .col-lg-9.ps-0 {
+            padding-left: 15px !important;  /* Restore padding on mobile */
+        }
+        
+        .table-responsive {
+            margin-right: 0;  /* Remove margin on mobile */
+        }
+    }
+
+    /* Optional: Add smooth scrolling to the page */
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* Remove default container padding */
+    .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+    }
+
+    /* Adjust records column */
+    .records-column {
+        padding-left: 0;
+    }
+
+    /* Table container */
+    .table-responsive {
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Search container */
+    .search-container {
+        flex-grow: 1;
+        margin-right: 15px;
+    }
+
+    /* Widget container adjustments */
+    .widgets-container {
+        position: sticky;
+        top: 20px;
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.05);
+        margin-right: 15px;
+    }
+
+    /* Table adjustments */
+    .table {
+        margin-bottom: 0;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 991px) {
+        .records-column {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+        
+        .widgets-container {
+            margin: 15px;
+        }
+    }
+
+    /* Your existing widget styles... */
+
+    /* Table container */
+    .table-responsive {
+        margin: 0;
+        padding: 0;
+        border-radius: 8px;
+        background: white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        overflow-x: auto;
+    }
+
+    /* Table styles */
+    .table {
+        margin-bottom: 0;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    /* Column widths */
+    .table th, .table td {
+        padding: 12px 8px;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    /* Specific column widths */
+    .no-column {
+        width: 50px;
+        min-width: 50px;
+    }
+
+    .transaction-column {
+        width: 120px;
+        min-width: 120px;
+    }
+
+    .item-column {
+        width: 150px;
+        min-width: 150px;
+    }
+
+    /* Description column can wrap */
+    .table td:nth-child(5) {
+        white-space: normal;
+        min-width: 200px;
+        max-width: 300px;
+    }
+
+    /* Filter styles */
+    .column-filter {
+        width: 100%;
+        padding: 4px 8px;
+        font-size: 0.9rem;
+    }
+
+    /* Header styles */
+    .table thead th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+    }
+
+    /* Row hover effect */
+    .table tbody tr:hover {
+        background-color: rgba(0,123,255,0.05);
+    }
+
+    /* Zebra striping */
+    .table tbody tr:nth-of-type(odd) {
+        background-color: rgba(0,0,0,0.02);
+    }
+
+    /* Cell padding and alignment */
+    .table td, .table th {
+        padding: 12px 8px;
+        vertical-align: middle;
+    }
+
+    /* Numeric columns alignment */
+    .table td:nth-child(10),
+    .table td:nth-child(11),
+    .table td:nth-child(12) {
+        text-align: right;
+    }
+
+    /* Filter row styling */
+    .filters th {
+        padding: 8px 4px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1400px) {
+        .table td, .table th {
+            padding: 8px 6px;
+            font-size: 0.9rem;
+        }
+    }
+
+    @media (max-width: 991px) {
+        .table-responsive {
+            margin: 0 -15px;
+            border-radius: 0;
+        }
+    }
+
+    /* Top Section Styles */
+    .top-section {
+        padding: 10px 5px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    /* Clear Filters Button Style - matching Add Record */
+    #clearColumnFilters {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+
+    #clearColumnFilters:hover {
+        background: linear-gradient(45deg, #20c997, #28a745);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+
+    /* Search Row Styles */
+    .search-row {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .search-form {
+        width: 100%;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .top-section {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .top-section h5 {
+            margin-bottom: 10px;
+        }
+    }
+
+    /* Main Container */
+    .main-container {
+        margin: 0;
+        padding: 0 10px;
+        width: 100%;
+    }
+
+    /* Content Layout */
+    .content-layout {
+        display: flex;
+        gap: 20px;
+    }
+
+    /* Table Section */
+    .table-section {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* Search Row */
+    .search-row {
+        background: white;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .search-form {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        white-space: nowrap;
+    }
+
+    /* Clear Filters Button */
+    #clearColumnFilters {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        border: none;
+        color: white;
+    }
+
+    #clearColumnFilters:hover {
+        background: linear-gradient(45deg, #20c997, #28a745);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    /* Widget Styles */
+    .widget {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        transition: transform 0.3s ease;
+    }
+
+    .widget:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .content-layout {
+            flex-direction: column;
+        }
+        
+        .widget-section {
+            width: 100%;
+        }
+        
+        .widgets-container {
+            position: static;
+        }
+        
+        .search-form {
+            flex-wrap: wrap;
+        }
+        
+        .button-group {
+            margin-top: 10px;
+            width: 100%;
+            justify-content: flex-end;
+        }
+    }
+
+    /* Main layout styles */
+    .main-container {
+        margin: 0;
+        padding: 10px;
+        width: 100%;
+    }
+
+    .content-layout {
+        display: flex;
+        gap: 20px;
+    }
+
+    /* Table section styles */
+    .table-section {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* Widget section styles */
+    .widget-section {
+        width: 300px;
+        flex-shrink: 0;
+    }
+
+    .widgets-container {
+        position: sticky;
+        top: 20px;
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.05);
+    }
+
+    /* Widget styles */
+    .widget {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        transition: transform 0.3s ease;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .content-layout {
+            flex-direction: column;
+        }
+        
+        .widget-section {
+            width: 100%;
+        }
+        
+        .widgets-container {
+            position: static;
+            margin-top: 20px;
+        }
+    }
+
+    /* Sliding Panel Styles */
+    .sliding-panel {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 100%;
+        max-width: 500px;
+        height: 100%;
+        background-color: white;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+        transition: right 0.3s ease-in-out;
+        z-index: 1050;
+        overflow-y: auto;
+        padding: 20px;
+    }
+
+    .sliding-panel.open {
+        right: 0;
+    }
+
+    .panel-content {
+        padding: 20px;
+    }
+
+    /* Form Styles */
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control, .form-select {
+        padding: 0.5rem;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+
+    /* Required field indicator */
+    .text-danger {
+        color: #dc3545;
+    }
+
+    /* Error messages */
+    .invalid-feedback {
+        display: block;
+        color: #dc3545;
+        font-size: 0.875rem;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 {% if user.is_authenticated %}
-    <h1>Financial Records</h1>
-    <div class="scroll-indicator">
-        <i class="fas fa-arrows-left-right"></i> Scroll horizontally to view more
-    </div>
-    <div class="table-responsive">
-        <table class="table table-striped table-hover table-bordered">
-            <thead class="table-dark">
-                <tr>
-                    <th>Transaction Type</th>
-                    <th>Item Name</th>
-                    <th>Item Type</th>
-                    <th>Description</th>
-                    <th>Project</th>
-                    <th>Location</th>
-                    <th>Requester</th>
-                    <th>Unit Measure</th>
-                    <th>Quantity</th>
-                    <th>Unit Price</th>
-                    <th>Total Value</th>
-                    <th>Date</th>
-                    <th>Reviewer</th>
-                    <th>Result</th>
-                    <th>Approval</th>
-                    <th>Status</th>
-                    <th>Comments</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% if records %}
-                {% for record in records %}
-                <tr>
-                    <td>{{ record.transaction_type }}</td>
-                    <td>{{ record.item_name }}</td>
-                    <td>{{ record.item_type }}</td>
-                    <td>{{ record.description }}</td>
-                    <td>{{ record.project }}</td>
-                    <td>{{ record.location }}</td>
-                    <td>{{ record.requester }}</td>
-                    <td>{{ record.unit_measure }}</td>
-                    <td>{{ record.quantity }}</td>
-                    <td>{{ record.unit_price }}</td>
-                    <td>{{ record.total_value }}</td>
-                    <td>{{ record.date }}</td>
-                    <td>{{ record.reviewer }}</td>
-                    <td>{{ record.reviewer_result }}</td>
-                    <td>{{ record.approval }}</td>
-                    <td>{{ record.cashier_status }}</td>
-                    <td>{{ record.comments }}</td>
-                </tr>
-                {% endfor %}
-            {% endif %}
-            </tbody>
-        </table>
-    </div>
-{% else %}
-    <h1 class="animated-text text-center mt-5">NSDO Financial Control System</h1>
-    <div class="col-md-6 offset-md3">
-        <h1>Login</h1>
-        <br/>
-        <form method="POST" action="{% url 'home' %}">
-            {% csrf_token %}
-            <div class="mb-3">
-                <input type="text" class="form-control" name="username" placeholder="Username" required>
-            </div>
-            <br/>
-            <div class="mb-3">
-                <input type="password" class="form-control" name="password" placeholder="Password" required>
-            </div>
-            <br/>
-            <button type="submit" class="btn btn-secondary">Login</button>
-        </form>
-    </div>
-{% endif %}
-
-<!-- Sliding Panel -->
-<div id="addRecordPanel" class="sliding-panel">
-    <div class="panel-content">
-        <span class="close-btn" onclick="closePanel()">&times;</span>
-        <h2 class="text-center mb-4">Add Financial Record</h2>
-        <form method="post" action="{% url 'add_record' %}" id="addRecordForm" class="px-3">
-            {% csrf_token %}
-            {% if form %}
-                {% for field in form %}
-                    <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label">
-                            {{ field.label }}
-                            {% if field.field.required %}
-                                <span class="text-danger">*</span>
-                            {% endif %}
-                        </label>
-                        {% if field.field.widget.input_type == 'select' or field|fieldtype == 'select' %}
-                            {{ field }}
-                        {% elif field.name == 'date' %}
-                            <input type="date" 
-                                name="{{ field.name }}"
-                                id="{{ field.id_for_label }}"
-                                class="form-control date-picker {% if field.errors %}is-invalid{% endif %}"
-                                {% if field.value %}value="{{ field.value|date:'Y-m-d' }}"{% endif %}>
-                        {% else %}
-                            <input type="{{ field.field.widget.input_type }}" 
-                                name="{{ field.name }}"
-                                id="{{ field.id_for_label }}"
-                                class="form-control {% if field.errors %}is-invalid{% endif %}"
-                                {% if field.value %}value="{{ field.value }}"{% endif %}
-                                placeholder="{{ field.label }}">
-                        {% endif %}
-                        {% if field.errors %}
-                            <div class="invalid-feedback">
-                                {{ field.errors }}
-                            </div>
-                        {% endif %}
-                        {% if field.help_text %}
-                            <div class="form-text">{{ field.help_text }}</div>
-                        {% endif %}
+<div class="main-container">
+    <div class="content-layout">
+        <!-- Records Section -->
+        <div class="table-section">
+            <!-- Search Row with buttons -->
+            <div class="search-row mb-3">
+                <form method="GET" class="search-form d-flex gap-2">
+                    <input type="text" name="search" class="form-control" placeholder="Search records..." value="{{ search_query }}">
+                    <select name="filter" class="form-select">
+                        <option value="all">All Fields</option>
+                    </select>
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearSearch()">Clear</button>
+                        <button type="button" id="clearColumnFilters" class="btn custom-btn-success">
+                            <i class="fas fa-filter-circle-xmark"></i> Clear Filters
+                        </button>
                     </div>
-                {% endfor %}
-            {% endif %}
-            <div class="d-grid gap-2 mt-4">
-                <button type="submit" class="btn btn-primary btn-lg">Submit Record</button>
-                <button type="button" class="btn btn-secondary" onclick="closePanel()">Cancel</button>
+                </form>
             </div>
-        </form>
+
+            <!-- Records table -->
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Transaction Type</th>
+                            <th>Item Name</th>
+                            <th>Item Type</th>
+                            <th>Description</th>
+                            <th>Project</th>
+                            <th>Location</th>
+                            <th>Requester</th>
+                            <th>Unit Measure</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ record.transaction_type }}</td>
+                                <td>{{ record.item_name }}</td>
+                                <td>{{ record.item_type }}</td>
+                                <td>{{ record.description }}</td>
+                                <td>{{ record.project }}</td>
+                                <td>{{ record.location }}</td>
+                                <td>{{ record.requester }}</td>
+                                <td>{{ record.unit_measure }}</td>
+                                <td>{{ record.quantity }}</td>
+                                <td>{{ record.unit_price }}</td>
+                                <td>{{ record.total_value }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="12" class="text-center">No records found</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Widget Section -->
+        <div class="widget-section">
+            <div class="widgets-container">
+                <h4 class="widget-section-title mb-3">Financial Summary</h4>
+                
+                <!-- Total Income Widget -->
+                <div class="widget income-widget">
+                    <div class="widget-icon">
+                        <i class="fas fa-arrow-trend-up"></i>
+                    </div>
+                    <div class="widget-content">
+                        <h3>Total Income</h3>
+                        <p class="widget-value">$ {{ total_income|floatformat:2 }}</p>
+                    </div>
+                </div>
+
+                <!-- Total Expense Widget -->
+                <div class="widget expense-widget">
+                    <div class="widget-icon">
+                        <i class="fas fa-arrow-trend-down"></i>
+                    </div>
+                    <div class="widget-content">
+                        <h3>Total Expense</h3>
+                        <p class="widget-value">$ {{ total_expense|floatformat:2 }}</p>
+                    </div>
+                </div>
+
+                <!-- Total Advance Widget -->
+                <div class="widget advance-widget">
+                    <div class="widget-icon">
+                        <i class="fas fa-money-bill-transfer"></i>
+                    </div>
+                    <div class="widget-content">
+                        <h3>Total Advance</h3>
+                        <p class="widget-value">$ {{ total_advance|floatformat:2 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    function openPanel() {
-        document.getElementById('addRecordPanel').classList.add('open');
-    }
-
-    function closePanel() {
-        document.getElementById('addRecordPanel').classList.remove('open');
-    }
-
-    document.querySelector('.table-responsive').addEventListener('wheel', (e) => {
-        if (e.deltaY !== 0) {
-            e.preventDefault();
-            this.scrollLeft += e.deltaY;
-        }
-    });
+function clearSearch() {
+    document.querySelector('input[name="search"]').value = '';
+    document.querySelector('select[name="filter"]').value = 'all';
+    document.querySelector('.search-form').submit();
+}
 </script>
+{% else %}
+<div class="login-container">
+    <h2>Login</h2>
+    <form method="POST" action="{% url 'login' %}">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Login</button>
+    </form>
+</div>
+{% endif %}
 {% endblock %}

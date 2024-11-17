@@ -11,11 +11,30 @@
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav ms-auto">
         {% if user.is_authenticated %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Financial Records
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="navbarDropdown">
+              <li><a class="dropdown-item" href="{% url 'home' %}">All Records</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'pending_records' %}">Pending Records</a></li>
+              <li><a class="dropdown-item" href="{% url 'approved_records' %}">Approved Records</a></li>
+              <li><a class="dropdown-item" href="{% url 'rejected_records' %}">Rejected Records</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'my_records' %}">My Records</a></li>
+            </ul>
+          </li>
           <li class="nav-item">
-            <a class="nav-link" href="#" onclick="openPanel(); return false;">Add Record</a>
+            <button onclick="openPanel()" class="btn custom-btn-success">
+                <i class="fas fa-plus-circle me-1"></i> Add Record
+            </button>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
           </li>
         {% else %}
           <li class="nav-item">
@@ -29,3 +48,135 @@
     </div>
   </div>
 </nav>
+
+<div id="addRecordPanel" class="sliding-panel">
+  <div class="panel-content">
+    <span class="close-btn" onclick="closePanel()">&times;</span>
+    <h2>Add Record</h2>
+    <form method="POST" action="{% url 'add_record' %}" id="addRecordForm">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+  </div>
+</div>
+
+<style>
+/* Dropdown hover effects */
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.dropdown-item {
+    padding: 8px 20px;
+    transition: all 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #0056b3;
+    color: white;
+    transform: translateX(5px);
+}
+
+.dropdown-divider {
+    border-color: rgba(255,255,255,0.1);
+    margin: 0.5rem 0;
+}
+
+/* Active state for dropdown */
+.dropdown-item.active, 
+.dropdown-item:active {
+    background-color: #007bff;
+    color: white;
+}
+
+/* Navbar item hover effect */
+.nav-item .nav-link {
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+.nav-item .nav-link:after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: #007bff;
+    transition: width 0.3s ease;
+}
+
+.nav-item .nav-link:hover:after {
+    width: 100%;
+}
+
+/* Ensure dropdown works on hover too */
+@media (min-width: 992px) {
+    .dropdown:hover .dropdown-menu {
+        display: block;
+    }
+}
+
+/* Add Record Button Style */
+.custom-btn-success {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    margin: 0 10px;
+}
+
+.custom-btn-success:hover {
+    background: linear-gradient(45deg, #20c997, #28a745);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    color: white;
+}
+
+@media (max-width: 991px) {
+    .custom-btn-success {
+        margin: 10px 0;
+        width: 100%;
+    }
+}
+
+/* Sliding Panel Styles */
+.sliding-panel {
+    position: fixed; /* Keeps the panel fixed in the viewport */
+    right: -100%; /* Initially hidden off-screen */
+    top: 0;
+    width: 40%; /* Adjust as necessary */
+    height: 100%;
+    background: white;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+    transition: right 0.3s ease; /* Smooth transition */
+    z-index: 1000; /* Ensure it appears above other content */
+    overflow-y: auto; /* Allow scrolling if content overflows */
+}
+
+.sliding-panel.open {
+    right: 0; /* Slide in when open */
+}
+</style>
+
+<script>
+  function openPanel() {
+      const panel = document.getElementById('addRecordPanel');
+      if (panel) {
+          panel.classList.add('open');
+      } else {
+          console.error('Add Record panel not found!');
+      }
+  }
+  
+  function closePanel() {
+      const panel = document.getElementById('addRecordPanel');
+      if (panel) {
+          panel.classList.remove('open');
+      }
+  }
+</script>
