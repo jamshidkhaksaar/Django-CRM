@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'baton.autodiscover' ,
     'maintenance_mode',
     'website',
+    'accounts',
     
 ]
 
@@ -136,3 +137,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MAINTENANCE_MODE = False
 MAINTENANCE_MODE_IGNORE_ADMIN_SITE = True
 MAINTENANCE_MODE_TEMPLATE = "503.html"
+

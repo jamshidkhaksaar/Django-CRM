@@ -1095,6 +1095,17 @@
         color: #dc3545;
         font-size: 0.875rem;
     }
+
+    .record-link {
+        color: #007bff;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+    
+    .record-link:hover {
+        color: #0056b3;
+        text-decoration: underline;
+    }
 </style>
 {% endblock %}
 
@@ -1145,7 +1156,11 @@
                             <tr>
                                 <td>{{ forloop.counter }}</td>
                                 <td>{{ record.transaction_type }}</td>
-                                <td>{{ record.item_name }}</td>
+                                <td>
+                                    <a href="{% url 'edit_record' record.pk %}" class="record-link">
+                                        {{ record.item_name }}
+                                    </a>
+                                </td>
                                 <td>{{ record.item_type }}</td>
                                 <td>{{ record.description }}</td>
                                 <td>{{ record.project }}</td>

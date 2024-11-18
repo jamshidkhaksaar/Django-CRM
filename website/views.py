@@ -1,13 +1,16 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import SignUpForm, AddRecordForm
-from .models import Record
+from .models import Record, DefaultChoices, CustomUser
 from django.db.models import Count, Sum, Q
 from django.db.models.functions import TruncMonth
 import json
 from datetime import datetime, timedelta
 import logging
+from django.contrib.auth.decorators import login_required
+from .decorators import user_type_required
+from django.http import HttpResponseForbidden
 
 logger = logging.getLogger(__name__)
 
@@ -37,38 +40,52 @@ def home(request):
     if request.user.is_authenticated:
         # Get your records
         records = Record.objects.all()
+        form = AddRecordForm()
         
-        # Get unique values from existing records for choices
-        item_types = Record.objects.values_list('item_type', flat=True).distinct()
-        projects = Record.objects.values_list('project', flat=True).distinct()
-        locations = Record.objects.values_list('location', flat=True).distinct()
-        unit_measures = Record.objects.values_list('unit_measure', flat=True).distinct()
-        reviewers = Record.objects.values_list('reviewer', flat=True).distinct()
+        # Fetch default choices from the database
+        default_choices = DefaultChoices.objects.first()  # Assuming only one entry exists
 
-        # If you want to add default choices when no records exist
-        if not item_types:
-            item_types = ['Material', 'Service', 'Equipment']
-        if not projects:
-            projects = ['Project A', 'Project B', 'Project C']
-        if not locations:
-            locations = ['Location 1', 'Location 2', 'Location 3']
-        if not unit_measures:
-            unit_measures = ['Pieces', 'Kilograms', 'Meters']
-        if not reviewers:
-            reviewers = ['John Doe', 'Jane Smith']
+        # Initialize default values
+        item_types = []
+        projects = []
+        locations = []
+        unit_measures = []
+        reviewers = []
+
+        # Get unique values from existing records for choices
+        if default_choices is not None:
+            item_types = Record.objects.values_list('item_type', flat=True).distinct() or default_choices.item_types
+            projects = Record.objects.values_list('project', flat=True).distinct() or default_choices.projects
+            locations = Record.objects.values_list('location', flat=True).distinct() or default_choices.locations
+            unit_measures = Record.objects.values_list('unit_measure', flat=True).distinct() or default_choices.unit_measures
+            reviewers = Record.objects.values_list('reviewer', flat=True).distinct() or default_choices.reviewers
+        else:
+            # If no default choices exist, get unique values from records
+            item_types = Record.objects.values_list('item_type', flat=True).distinct()
+            projects = Record.objects.values_list('project', flat=True).distinct()
+            locations = Record.objects.values_list('location', flat=True).distinct()
+            unit_measures = Record.objects.values_list('unit_measure', flat=True).distinct()
+            reviewers = Record.objects.values_list('reviewer', flat=True).distinct()
+
+        # Calculate totals
+        total_income = records.filter(transaction_type='income').aggregate(Sum('total_value'))['total_value__sum'] or 0
+        total_expense = records.filter(transaction_type='expense').aggregate(Sum('total_value'))['total_value__sum'] or 0
+        total_advance = records.filter(transaction_type='advance').aggregate(Sum('total_value'))['total_value__sum'] or 0
 
         context = {
             'records': records,
+            'form': form,
             'item_types': item_types,
             'projects': projects,
             'locations': locations,
             'unit_measures': unit_measures,
             'reviewers': reviewers,
-            'total_income': records.filter(transaction_type='income').aggregate(Sum('total_value'))['total_value__sum'] or 0,
-            'total_expense': records.filter(transaction_type='expense').aggregate(Sum('total_value'))['total_value__sum'] or 0,
-            'total_advance': records.filter(transaction_type='advance').aggregate(Sum('total_value'))['total_value__sum'] or 0,
+            'total_income': total_income,
+            'total_expense': total_expense,
+            'total_advance': total_advance,
         }
         return render(request, 'home.html', context)
+    
     return render(request, 'home.html', {})
 
 def register_user(request):
@@ -88,19 +105,41 @@ def register_user(request):
 
 def login_user(request):
     if request.method == 'POST':
-           username = request.POST['username']
-           password = request.POST['password']
-           user = authenticate(request, username=username, password=password)
-           if user is not None:
-               login(request, user)
-               messages.success(request, "You have been logged in.")
-               return redirect('home')  # Redirect to home after successful login
-           else:
-               # Handle invalid login
-               messages.success(request, "There was an error logging in, please try again.")
-               return redirect('home')
-    else:     
-        return render(request, 'login.html', {})   
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        logger.info("="*50)
+        logger.info(f"Login attempt for: {username}")
+        
+        try:
+            # First check if user exists
+            user = CustomUser.objects.get(username=username)
+            logger.info(f"Found user: {username}")
+            logger.info(f"Is active: {user.is_active}")
+            
+            # Attempt authentication
+            auth_user = authenticate(request, username=username, password=password)
+            
+            if auth_user is not None:
+                login(request, auth_user)
+                logger.info(f"Login successful for: {username}")
+                messages.success(request, "You have been logged in.")
+                return redirect('home')
+            else:
+                logger.warning(f"Invalid password for: {username}")
+                messages.error(request, "Invalid password.")
+            
+        except CustomUser.DoesNotExist:
+            logger.warning(f"User not found: {username}")
+            messages.error(request, "Invalid username.")
+        except Exception as e:
+            logger.error(f"Login error: {str(e)}")
+            messages.error(request, "An error occurred during login.")
+        
+        logger.info("="*50)
+        return redirect('home')
+    
+    return redirect('home')
 
 def logout_user(request):
     logout(request)
@@ -109,7 +148,7 @@ def logout_user(request):
 
 def customer_record(request, pk):
     if request.user.is_authenticated:
-        customer_record = Record.objects.get(id=pk)
+        customer_record = get_object_or_404(Record, id=pk, requester=request.user)  # Check ownership
         return render(request, 'record.html', {'customer_record': customer_record})
     else: 
         messages.error(request, "You must be logged in to view this page.")
@@ -117,48 +156,71 @@ def customer_record(request, pk):
 
 def delete_record(request, pk):
     if request.user.is_authenticated:
-        delete_it = Record.objects.get(id=pk)
-        delete_it.delete()
+        record_to_delete = get_object_or_404(Record, id=pk, requester=request.user)  # Check ownership
+        record_to_delete.delete()
         messages.success(request, "Record deleted successfully.")
         return redirect('home')
     else:
         messages.error(request, "You must be logged in to do that.")
         return redirect('home')
 
+@login_required
 def add_record(request):
-    if request.user.is_authenticated:
-        if request.method == 'POST':
-            form = AddRecordForm(request.POST)
-            if form.is_valid():
-                record = form.save(commit=False)
-                record.requester = request.user
-                record.save()
-                messages.success(request, "Record Added Successfully!")
-                return redirect('home')
-            else:
-                messages.error(request, "Form validation error")
-        else:
-            form = AddRecordForm()
-        return render(request, 'home.html', {'form': form})
-    messages.error(request, "Please login to add records")
-    return redirect('home')
+    if request.method == 'POST':
+        form = AddRecordForm(request.POST)
+        if form.is_valid():
+            record = form.save(commit=False)
+            record.requester = request.user
+            record.save()
+            messages.success(request, "Record Added Successfully!")
+            return redirect('home')
+    else:
+        form = AddRecordForm()
+    
+    # Return JSON or a partial template instead of full navbar
+    return render(request, 'add_record.html', {'form': form})
 
+@login_required
 def update_record(request, pk):
     if request.user.is_authenticated:
-        current_record = Record.objects.get(id=pk)
+        current_record = get_object_or_404(Record, id=pk, requester=request.user)  # Check ownership
         form = AddRecordForm(request.POST or None, instance=current_record)
         if request.method == "POST":
             if form.is_valid():
-                form.save()
-                messages.success(request, "Record has been updated!")
-                return redirect('home')
+                # Check if the version matches
+                if form.instance.version == current_record.version:
+                    form.save()
+                    messages.success(request, "Record has been updated!")
+                    return redirect('home')
+                else:
+                    messages.error(request, "This record has been modified by another user. Please refresh and try again.")
             else:
-                messages.error(request, "There was an error with your form submission.")
+                messages.error(request, "There was an error with your form submission. Please correct the errors below.")
         return render(request, 'update_record.html', {'form': form})
     else:
         messages.error(request, "You must be logged in to update a record.")
         return redirect('home')
 
+def filter_records(records, search_query, search_filter):
+    """Helper function to filter records based on search query and filter type."""
+    if search_query:
+        if search_filter == 'all':
+            records = records.filter(
+                Q(transaction_type__icontains=search_query) |
+                Q(item_name__icontains=search_query) |
+                Q(project__icontains=search_query) |
+                Q(location__icontains=search_query) |
+                Q(requester__username__icontains=search_query)
+            )
+        else:
+            if search_filter == 'requester':
+                records = records.filter(requester__username__icontains=search_query)
+            else:
+                filter_kwargs = {f"{search_filter}__icontains": search_query}
+                records = records.filter(**filter_kwargs)
+    return records
+
+@login_required
 def pending_records(request):
     if request.user.is_authenticated:
         records = Record.objects.filter(cashier_status='Pending')
@@ -168,69 +230,35 @@ def pending_records(request):
         search_query = request.GET.get('search', '')
         search_filter = request.GET.get('filter', 'all')
 
-        if search_query:
-            if search_filter == 'all':
-                records = records.filter(
-                    Q(transaction_type__icontains=search_query) |
-                    Q(item_name__icontains=search_query) |
-                    Q(project__icontains=search_query) |
-                    Q(location__icontains=search_query) |
-                    Q(requester__username__icontains=search_query)
-                )
-            else:
-                if search_filter == 'requester':
-                    records = records.filter(requester__username__icontains=search_query)
-                else:
-                    filter_kwargs = {f"{search_filter}__icontains": search_query}
-                    records = records.filter(**filter_kwargs)
-
-        # Get filter choices
-        filter_choices = get_filter_choices(Record.objects.all())
-
-        context = {
-            'records': records,
-            'form': form,
-            'search_query': search_query,
-            'search_filter': search_filter,
-            **filter_choices,
-        }
-
-        return render(request, 'home.html', context)
-    return redirect('home')
-
-def approved_records(request):
-    if request.user.is_authenticated:
-        records = Record.objects.filter(cashier_status='Approved')
-        form = AddRecordForm()
-        
-        # Add search functionality
-        search_query = request.GET.get('search', '')
-        search_filter = request.GET.get('filter', 'all')
-
-        if search_query:
-            if search_filter == 'all':
-                records = records.filter(
-                    Q(transaction_type__icontains=search_query) |
-                    Q(item_name__icontains=search_query) |
-                    Q(project__icontains=search_query) |
-                    Q(location__icontains=search_query) |
-                    Q(requester__username__icontains=search_query)
-                )
-            else:
-                if search_filter == 'requester':
-                    records = records.filter(requester__username__icontains=search_query)
-                else:
-                    filter_kwargs = {f"{search_filter}__icontains": search_query}
-                    records = records.filter(**filter_kwargs)
+        records = filter_records(records, search_query, search_filter)
 
         return render(request, 'home.html', {
-            'records': records, 
+            'records': records,
             'form': form,
             'search_query': search_query,
             'search_filter': search_filter
         })
     return redirect('home')
 
+@login_required
+def approved_records(request):
+    records = Record.objects.filter(cashier_status='Approved')
+    form = AddRecordForm()
+    
+    # Add search functionality
+    search_query = request.GET.get('search', '')
+    search_filter = request.GET.get('filter', 'all')
+
+    records = filter_records(records, search_query, search_filter)
+
+    return render(request, 'home.html', {
+        'records': records,
+        'form': form,
+        'search_query': search_query,
+        'search_filter': search_filter
+    })
+
+@login_required
 def rejected_records(request):
     if request.user.is_authenticated:
         records = Record.objects.filter(cashier_status='Rejected')
@@ -240,30 +268,17 @@ def rejected_records(request):
         search_query = request.GET.get('search', '')
         search_filter = request.GET.get('filter', 'all')
 
-        if search_query:
-            if search_filter == 'all':
-                records = records.filter(
-                    Q(transaction_type__icontains=search_query) |
-                    Q(item_name__icontains=search_query) |
-                    Q(project__icontains=search_query) |
-                    Q(location__icontains=search_query) |
-                    Q(requester__username__icontains=search_query)
-                )
-            else:
-                if search_filter == 'requester':
-                    records = records.filter(requester__username__icontains=search_query)
-                else:
-                    filter_kwargs = {f"{search_filter}__icontains": search_query}
-                    records = records.filter(**filter_kwargs)
+        records = filter_records(records, search_query, search_filter)
 
         return render(request, 'home.html', {
-            'records': records, 
+            'records': records,
             'form': form,
             'search_query': search_query,
             'search_filter': search_filter
         })
     return redirect('home')
 
+@login_required
 def my_records(request):
     if request.user.is_authenticated:
         records = Record.objects.filter(requester=request.user)
@@ -273,30 +288,17 @@ def my_records(request):
         search_query = request.GET.get('search', '')
         search_filter = request.GET.get('filter', 'all')
 
-        if search_query:
-            if search_filter == 'all':
-                records = records.filter(
-                    Q(transaction_type__icontains=search_query) |
-                    Q(item_name__icontains=search_query) |
-                    Q(project__icontains=search_query) |
-                    Q(location__icontains=search_query) |
-                    Q(requester__username__icontains=search_query)
-                )
-            else:
-                if search_filter == 'requester':
-                    records = records.filter(requester__username__icontains=search_query)
-                else:
-                    filter_kwargs = {f"{search_filter}__icontains": search_query}
-                    records = records.filter(**filter_kwargs)
+        records = filter_records(records, search_query, search_filter)
 
         return render(request, 'home.html', {
-            'records': records, 
+            'records': records,
             'form': form,
             'search_query': search_query,
             'search_filter': search_filter
         })
     return redirect('home')
 
+@user_type_required('superadmin')
 def dashboard(request):
     if request.user.is_authenticated:
         # Get counts for statistics cards
@@ -332,7 +334,7 @@ def dashboard(request):
         ).order_by('-total_value')[:5]  # Top 5 projects
 
         project_labels = [item['project'] for item in project_data]
-        project_values = [float(item['total_value']) for item in project_data]
+        project_values = [float(item['total_value']) if item['total_value'] is not None else 0 for item in project_data]
 
         context = {
             'total_records': total_records,
@@ -349,3 +351,38 @@ def dashboard(request):
 
         return render(request, 'dashboard.html', context)
     return redirect('home')
+
+def some_view(request):
+    if request.user.is_authenticated:
+        if request.user.user_type != 'data_entry':
+            return HttpResponseForbidden("You do not have permission to access this page.")
+
+        # Proceed with the view logic
+    return redirect('login')
+
+@login_required
+def edit_record(request, pk):
+    record = get_object_or_404(Record, pk=pk)
+    
+    if request.method == 'POST':
+        form = AddRecordForm(request.POST, instance=record)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Record Updated Successfully!")
+            return redirect('home')
+    else:
+        form = AddRecordForm(instance=record)
+    
+    return render(request, 'edit_record.html', {
+        'form': form,
+        'record': record
+    })
+
+@login_required
+def delete_record(request, pk):
+    record = get_object_or_404(Record, pk=pk)
+    if request.method == 'POST':
+        record.delete()
+        messages.success(request, "Record Deleted Successfully!")
+        return redirect('home')
+    return redirect('edit_record', pk=pk)
