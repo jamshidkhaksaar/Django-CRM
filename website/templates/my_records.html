@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Summary Cards Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Records</h5>
+                    <h2>{{ total_records }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Pending</h5>
+                    <h2>{{ pending_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Approved</h5>
+                    <h2>{{ approved_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Rejected</h5>
+                    <h2>{{ rejected_count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Records Table -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h4 class="mb-0">My Records</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>No</th>
+                            <th>Transaction Type</th>
+                            <th>Item Name</th>
+                            <th>Project</th>
+                            <th>Total Value (AFN)</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ record.transaction_type|title }}</td>
+                                <td>{{ record.item_name }}</td>
+                                <td>{{ record.project }}</td>
+                                <td>{{ record.total_value|floatformat:2 }}</td>
+                                <td>{{ record.date }}</td>
+                                <td>
+                                    <span class="badge {% if record.chief_executive_approval %}bg-success
+                                               {% elif record.deputy_director_approval %}bg-info
+                                               {% elif record.executive_director_approval %}bg-primary
+                                               {% else %}bg-warning{% endif %}">
+                                        {% if record.chief_executive_approval %}
+                                            Chief Approved
+                                        {% elif record.deputy_director_approval %}
+                                            Deputy Approved
+                                        {% elif record.executive_director_approval %}
+                                            Executive Approved
+                                        {% else %}
+                                            Pending
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'edit_record' record.id %}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center">No records found</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: none;
+    margin-bottom: 1rem;
+}
+.badge {
+    padding: 0.5em 1em;
+}
+.table-responsive {
+    overflow-x: auto;
+}
+</style>
+{% endblock %} 

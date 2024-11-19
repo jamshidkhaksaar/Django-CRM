@@ -1,0 +1,31 @@
+<div class="approval-history mt-4">
+    <h5>Approval Progress</h5>
+    <div class="approval-timeline">
+        <div class="approval-step {% if record.deputy_director_approval %}completed{% endif %}">
+            <span class="badge {% if record.deputy_director_approval %}bg-success{% else %}bg-secondary{% endif %}">
+                Deputy Director
+            </span>
+            {% if record.deputy_director_approval %}
+                <small class="text-muted d-block">{{ record.deputy_director_comments }}</small>
+            {% endif %}
+        </div>
+
+        <div class="approval-step {% if record.executive_director_approval %}completed{% endif %}">
+            <span class="badge {% if record.executive_director_approval %}bg-success{% else %}bg-secondary{% endif %}">
+                Executive Director
+            </span>
+            {% if record.executive_director_approval %}
+                <small class="text-muted d-block">{{ record.executive_director_comments }}</small>
+            {% endif %}
+        </div>
+
+        <div class="approval-step {% if record.chief_executive_approval %}completed{% endif %}">
+            <span class="badge {% if record.chief_executive_approval %}bg-success{% else %}bg-secondary{% endif %}">
+                Chief Executive
+            </span>
+            {% if record.chief_executive_approval %}
+                <small class="text-muted d-block">{{ record.chief_executive_comments }}</small>
+            {% endif %}
+        </div>
+    </div>
+</div>

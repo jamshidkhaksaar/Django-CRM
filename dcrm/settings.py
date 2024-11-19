@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -42,7 +43,7 @@ INSTALLED_APPS = [
     'maintenance_mode',
     'website',
     'accounts',
-    
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'maintenance_mode.middleware.MaintenanceModeMiddleware',
+    'website.middleware.NotificationMiddleware',
 ]
 
 ROOT_URLCONF = 'dcrm.urls'
@@ -69,6 +71,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'website.context_processors.notification_processor',
+                'website.context_processors.user_permissions',
             ],
         },
     },
@@ -127,6 +131,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = str(BASE_DIR / 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'website/static'),
+]
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = str(BASE_DIR / 'media')
 
 
 # Default primary key field type
@@ -137,4 +149,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MAINTENANCE_MODE = False
 MAINTENANCE_MODE_IGNORE_ADMIN_SITE = True
 MAINTENANCE_MODE_TEMPLATE = "503.html"
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
+
+AUTH_USER_MODEL = 'website.CustomUser'
+
+# Channels Configuration
+ASGI_APPLICATION = 'dcrm.asgi.application'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 

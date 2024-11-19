@@ -7,8 +7,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="mb-0">Edit Record</h3>
-                    <form action="{% url 'delete_record' record.pk %}" method="POST" class="d-inline" 
-                          onsubmit="return confirm('Are you sure you want to delete this record?');">
+                    <form action="{% url 'delete_record' record.pk %}" method="POST" class="d-inline" id="deleteForm">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger">
                             <i class="fas fa-trash-alt"></i> Delete
@@ -16,7 +15,7 @@
                     </form>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
+                    <form method="POST" action="{% url 'edit_record' record.pk %}">
                         {% csrf_token %}
                         {% for field in form %}
                         <div class="mb-3">
@@ -91,11 +90,12 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const deleteForm = document.querySelector('form[action*="delete"]');
+    const deleteForm = document.getElementById('deleteForm');
     if (deleteForm) {
         deleteForm.addEventListener('submit', function(e) {
-            if (!confirm('Are you sure you want to delete this record?')) {
-                e.preventDefault();
+            e.preventDefault();
+            if (confirm('Are you sure you want to delete this record?')) {
+                this.submit();
             }
         });
     }

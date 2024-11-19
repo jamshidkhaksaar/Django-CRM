@@ -21,5 +21,10 @@ class CustomUserAdmin(UserAdmin):
     search_fields = ('username', 'email', 'department')
     ordering = ('username',)
 
+    def save_model(self, request, obj, form, change):
+        if obj.is_superuser and obj.user_type != 'superuser':
+            obj.user_type = 'superuser'
+        super().save_model(request, obj, form, change)
+
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(Record)

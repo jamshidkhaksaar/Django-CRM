@@ -30,17 +30,21 @@ class AddRecordForm(forms.ModelForm):
             'unit_price',
             'total_value',
             'date',
-            'reviewer',
-            'reviewer_result',
-            'approval',
-            'cashier_status'
+            'comments',
         ]
         widgets = {
-            'date': forms.DateInput(attrs={'type': 'date'}),
-            'description': forms.Textarea(attrs={'rows': 3}),
-            'quantity': forms.NumberInput(attrs={'step': '0.01'}),
-            'unit_price': forms.NumberInput(attrs={'step': '0.01'}),
-            'total_value': forms.NumberInput(attrs={'step': '0.01'}),
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'transaction_type': forms.Select(attrs={'class': 'form-control'}),
+            'item_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'item_type': forms.TextInput(attrs={'class': 'form-control'}),
+            'project': forms.TextInput(attrs={'class': 'form-control'}),
+            'location': forms.TextInput(attrs={'class': 'form-control'}),
+            'unit_measure': forms.TextInput(attrs={'class': 'form-control'}),
+            'quantity': forms.NumberInput(attrs={'step': '0.01', 'class': 'form-control'}),
+            'unit_price': forms.NumberInput(attrs={'step': '0.01', 'class': 'form-control'}),
+            'total_value': forms.NumberInput(attrs={'step': '0.01', 'class': 'form-control'}),
+            'comments': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):

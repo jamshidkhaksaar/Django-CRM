@@ -13,18 +13,10 @@ class UserCreationForm(BaseUserCreationForm):
         choices=CustomUser.USER_TYPE_CHOICES,
         widget=forms.Select(attrs={'class': 'form-control'})
     )
-    department = forms.CharField(
-        required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Department'})
-    )
-    phone = forms.CharField(
-        required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number'})
-    )
 
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'password1', 'password2', 'user_type', 'department', 'phone')
+        fields = ('username', 'email', 'password1', 'password2', 'user_type')
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username'}),
         }
