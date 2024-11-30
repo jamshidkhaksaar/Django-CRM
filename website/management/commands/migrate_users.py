@@ -1,7 +1,7 @@
 # website/management/commands/migrate_users.py
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
-from website.models import CustomUser
+from accounts.models import CustomUser
 
 class Command(BaseCommand):
     help = 'Migrate existing users to CustomUser model'

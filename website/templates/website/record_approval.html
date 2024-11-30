@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Record Approval</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="comments" class="form-label">Comments</label>
+                    <textarea class="form-control" id="comments" name="comments" rows="3"></textarea>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" name="status" value="approved" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i> Approve
+                    </button>
+                    <button type="submit" name="status" value="rejected" class="btn btn-danger">
+                        <i class="fas fa-times me-1"></i> Reject
+                    </button>
+                    <a href="{% url 'website:record_detail' record.pk %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

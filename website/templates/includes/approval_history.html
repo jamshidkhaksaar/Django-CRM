@@ -1,31 +1,33 @@
 <div class="approval-history mt-4">
     <h5>Approval Progress</h5>
     <div class="approval-timeline">
-        <div class="approval-step {% if record.deputy_director_approval %}completed{% endif %}">
-            <span class="badge {% if record.deputy_director_approval %}bg-success{% else %}bg-secondary{% endif %}">
-                Deputy Director
-            </span>
-            {% if record.deputy_director_approval %}
-                <small class="text-muted d-block">{{ record.deputy_director_comments }}</small>
-            {% endif %}
-        </div>
-
-        <div class="approval-step {% if record.executive_director_approval %}completed{% endif %}">
-            <span class="badge {% if record.executive_director_approval %}bg-success{% else %}bg-secondary{% endif %}">
-                Executive Director
-            </span>
-            {% if record.executive_director_approval %}
-                <small class="text-muted d-block">{{ record.executive_director_comments }}</small>
-            {% endif %}
-        </div>
-
-        <div class="approval-step {% if record.chief_executive_approval %}completed{% endif %}">
-            <span class="badge {% if record.chief_executive_approval %}bg-success{% else %}bg-secondary{% endif %}">
-                Chief Executive
-            </span>
-            {% if record.chief_executive_approval %}
-                <small class="text-muted d-block">{{ record.chief_executive_comments }}</small>
-            {% endif %}
-        </div>
+        {% if record.get_approval_history %}
+            {% for approval in record.get_approval_history %}
+                <div class="approval-step {% if approval.status == 'approved' %}completed{% endif %}">
+                    <div class="step-content">
+                        <h6>{{ approval.role }} Review</h6>
+                        <div class="approval-details">
+                            <span class="badge {% if approval.status == 'approved' %}bg-success
+                                           {% elif approval.status == 'rejected' %}bg-danger
+                                           {% elif approval.status == 'pending_executive' %}bg-info
+                                           {% elif approval.status == 'pending_chief' %}bg-primary
+                                           {% else %}bg-warning{% endif %}">
+                                Status: {{ approval.status|title }}
+                            </span>
+                            <small class="text-muted d-block mt-2">Reviewed by: {{ approval.user }}</small>
+                            <small class="text-muted d-block">Date: {{ approval.date|date:"M d, Y H:i" }}</small>
+                            <div class="comments-section mt-2">
+                                <strong>Comments:</strong>
+                                <p class="comments-text mb-0">{{ approval.comments|default:"No comments provided" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No approvals yet
+            </div>
+        {% endif %}
     </div>
 </div>

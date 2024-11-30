@@ -2,470 +2,965 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import logout, authenticate, login
 from django.shortcuts import redirect
-from django.http import HttpResponse
-from .forms import AddRecordForm
-from .models import Record
-from django.db.models import Sum, Case, When, DecimalField
-from django.db.models.functions import TruncMonth
+from django.db.models import Sum
 from decimal import Decimal
-from django.db.models import Q
-from django.apps import apps
 from django.contrib.auth import get_user_model
-from django.contrib import messages
+from .models import Record, UserSettings, RecordApproval, Notification, UserActivity, AdvancePayback
+from django.views.generic import UpdateView, TemplateView, ListView, CreateView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
+from .forms import (
+    AddRecordForm, 
+    RecordForm, 
+    UserForm, 
+    UserEditForm, 
+    UserPermissionsForm, 
+    UserSettingsForm
+)
+from .mixins import ActivityTrackingMixin
+from django.contrib import messages
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.urls import reverse_lazy, reverse
+from django.views.generic.edit import CreateView, DeleteView
 from django.utils import timezone
-from .decorators import user_type_required
-from .models import Notification
-from accounts.models import UserProfile
-from django.contrib.auth.models import User
-from django.db.models import Count
-from django.db.models.functions import TruncMonth
-import json
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 
-@login_required
-def pending_records(request):
-    user = request.user
-    
-    # Define status mapping for different user types
-    status_mapping = {
-        'deputy_director': 'pending_deputy',
-        'executive_director': 'pending_executive',
-        'chief_executive': 'pending_chief'
-    }
-    
-    if user.user_type == 'superadmin':
-        records = Record.objects.exclude(approval_status='approved')
-    elif user.user_type in status_mapping:
-        records = Record.objects.filter(approval_status=status_mapping[user.user_type])
-    else:
-        records = Record.objects.filter(
-            Q(requester=user) & ~Q(approval_status='approved')
-        )
-    
-    records = records.order_by('-date')
-    
-    context = {
-        'records': records,
-        'user_type': user.user_type,
-        'can_approve': user.can_approve_records(),
-        'status_to_approve': status_mapping.get(user.user_type),
-        'total_records': records.count(),
-        'total_pending': records.filter(approval_status__startswith='pending').count(),
-        'total_rejected': records.filter(approval_status='rejected').count()
-    }
-    return render(request, 'pending_records.html', context)
+User = get_user_model()
 
-@login_required
-def approved_records(request):
-    # Get or create user profile from accounts app
-    userprofile, created = UserProfile.objects.get_or_create(
-        user=request.user,
-        defaults={'user_type': 'data_entry'}  # Set default user type
+@login_required(login_url='/accounts/login/')
+def home(request):
+    # Get all records
+    all_records = Record.objects.all().order_by('-created_at')
+    
+    # Get records by type and status
+    approved_records = all_records.filter(status='approved')
+    balance_records = all_records.filter(transaction_type='balance')
+    income_records = all_records.filter(transaction_type='income')
+    expense_records = all_records.filter(transaction_type='expense')
+    advance_records = all_records.filter(transaction_type='advance')
+    payable_records = all_records.filter(transaction_type='payable')
+    
+    # Calculate totals from approved records only
+    approved_balance = approved_records.filter(transaction_type='balance').aggregate(Sum('amount'))['amount__sum'] or 0
+    total_income = approved_records.filter(transaction_type='income').aggregate(Sum('amount'))['amount__sum'] or 0
+    total_expenses = approved_records.filter(transaction_type='expense').aggregate(Sum('amount'))['amount__sum'] or 0
+    total_advances = approved_records.filter(transaction_type='advance').aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    # Calculate payables (only include unpaid ones since paid ones have been settled)
+    total_payables = approved_records.filter(transaction_type='payable', is_paid=False).aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    # Calculate outstanding amounts
+    total_advance_paybacks = AdvancePayback.objects.aggregate(Sum('amount'))['amount__sum'] or 0
+    outstanding_advances = total_advances - total_advance_paybacks
+    
+    # Calculate total balance including all transactions
+    total_balance = (
+        approved_balance +  # Start with approved balance entries
+        total_income +  # Add income
+        total_payables +  # Add only unpaid payables (loans we still need to pay)
+        -total_expenses -  # Subtract expenses
+        outstanding_advances  # Subtract outstanding advances
     )
     
-    user_type = userprofile.user_type
-    records = Record.objects.filter(approval_status='approved')
-    can_edit = user_type in ['superadmin', 'data_entry']
+    # Get number of pending records
+    pending_advances = advance_records.exclude(
+        id__in=AdvancePayback.objects.filter(
+            is_fully_paid=True
+        ).values_list('advance_id', flat=True)
+    ).count()
+    
+    pending_payables = payable_records.filter(is_paid=False).count()
     
     context = {
-        'records': records,
-        'can_edit': can_edit,
-        'user_type': user_type,
-    }
-    
-    return render(request, 'approved_records.html', context)
-
-@login_required
-def rejected_records(request):
-    user = request.user
-    records = Record.objects.filter(approval_status='rejected').order_by('-date')
-    
-    # Get user type safely
-    try:
-        user_type = request.user.userprofile.user_type
-    except UserProfile.DoesNotExist:
-        user_type = None  # or set a default value
-    
-    # Calculate totals for rejected records
-    try:
-        can_edit = user_type in ['superadmin', 'data_entry']
-    except UserProfile.DoesNotExist:
-        can_edit = False  # or handle this case as needed
-    
-    context = {
-        'records': records,
-        'total_records': records.count(),
-        'total_income': records.filter(transaction_type='income').aggregate(
-            Sum('total_value'))['total_value__sum'] or Decimal('0.00'),
-        'total_expense': records.filter(transaction_type='expense').aggregate(
-            Sum('total_value'))['total_value__sum'] or Decimal('0.00'),
-        'total_advance': records.filter(transaction_type='advance').aggregate(
-            Sum('total_value'))['total_value__sum'] or Decimal('0.00'),
-        'can_edit': can_edit
-    }
-    return render(request, 'rejected_records.html', context)
-
-@login_required
-def home(request):
-    records = Record.objects.only(
-        'id',
-        'transaction_type',
-        'item_name',
-        'item_type',
-        'description',
-        'project',
-        'location',
-        'requester',
-        'unit_measure',
-        'quantity',
-        'unit_price',
-        'total_value',
-        'date',
-        'reviewer',
-        'approval_status',
-        'cashier_status',
-        'comments',
-        'created_at',
-        'updated_at',
-        'chief_executive_approval',
-        'deputy_director_approval',
-        'executive_director_approval'
-    ).all()
-    
-    # Calculate totals
-    total_income = Record.objects.filter(transaction_type='income').aggregate(Sum('total_value'))['total_value__sum'] or 0
-    total_expense = Record.objects.filter(transaction_type='expense').aggregate(Sum('total_value'))['total_value__sum'] or 0
-    total_advance = Record.objects.filter(transaction_type='advance').aggregate(Sum('total_value'))['total_value__sum'] or 0
-    total_balance = total_income - total_expense - total_advance
-    
-    # Get notifications
-    notifications_queryset = Notification.objects.filter(user=request.user)
-    notifications = notifications_queryset.order_by('-created_at')[:5]
-    unread_notifications = notifications_queryset.filter(is_read=False).count()
-    
-    context = {
-        'records': records,
-        'total_income': total_income,
-        'total_expense': total_expense,
-        'total_advance': total_advance,
+        'all_records': all_records,
+        'balance_records': balance_records,
+        'income_records': income_records,
+        'expense_records': expense_records,
+        'advance_records': advance_records,
+        'payable_records': payable_records,
         'total_balance': total_balance,
-        'add_record_form': AddRecordForm(),
-        'notifications': notifications,
-        'unread_notifications': unread_notifications,
+        'total_income': total_income,
+        'total_expenses': total_expenses,
+        'total_payables': total_payables,
+        'outstanding_advances': outstanding_advances,
+        'pending_advances': pending_advances,
+        'pending_payables': pending_payables,
+        'last_update': timezone.now(),
     }
+    
     return render(request, 'home.html', context)
 
-def add_record(request):
-    if not request.user.is_authenticated:
-        return JsonResponse({
-            'status': 'error',
-            'message': 'Please log in to add records'
-        }, status=401)
-
-    if request.method == 'POST':
-        form = AddRecordForm(request.POST)
-        if form.is_valid():
-            try:
-                record = form.save(commit=False)
-                CustomUser = get_user_model()
-                current_user = CustomUser.objects.get(id=request.user.id)
-                
-                record.reviewer = current_user
-                record.requester = current_user
-                record.reviewer_result = 'pending'
-                record.save()
-                
-                return JsonResponse({'status': 'success'})
-            except Exception as e:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': str(e)
-                }, status=400)
-        else:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Form validation failed',
-                'errors': {field: [str(e) for e in errors] for field, errors in form.errors.items()}
-            }, status=400)
-    else:
-        form = AddRecordForm()
-    
-    return render(request, 'add_record.html', {'form': form})
-
-def login_user(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            messages.success(request, f'Welcome back {username}!')
-            return redirect('home')
-        else:
-            messages.error(request, 'Invalid username or password')
-    
-    return render(request, 'login.html')
-
-def logout_user(request):
-    logout(request)
-    return redirect('home')
-
-def register_user(request):
-    return render(request, 'register.html')
-
 @login_required
-def my_records(request):
-    user = request.user
-    records = Record.objects.filter(requester=user).order_by('-date')
-    
-    context = {
-        'records': records,
-        'total_records': records.count(),
-        'pending_count': records.filter(approval_status__startswith='pending').count(),
-        'approved_count': records.filter(approval_status='approved').count(),
-        'rejected_count': records.filter(approval_status='rejected').count(),
-        'can_edit': user.user_type in ['superadmin', 'data_entry']
-    }
-    return render(request, 'my_records.html', context)
-
 def dashboard(request):
+    # Get approved records only
+    approved_records = Record.objects.filter(status='approved')
+    
     # Get total counts
     total_records = Record.objects.count()
-    pending_count = Record.objects.filter(reviewer_result='pending').count()
-    approved_count = Record.objects.filter(reviewer_result='approved').count()
-    rejected_count = Record.objects.filter(reviewer_result='rejected').count()
+    pending_records = Record.objects.filter(status='pending').count()
+    approved_records_count = approved_records.count()
+    rejected_records = Record.objects.filter(status='rejected').count()
     
-    # Get financial summaries
-    total_income = Record.objects.filter(
-        transaction_type='income'
-    ).aggregate(Sum('total_value'))['total_value__sum'] or Decimal('0.00')
+    # Get financial totals
+    total_income = approved_records.filter(transaction_type='income').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+    total_expenses = approved_records.filter(transaction_type='expense').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+    total_balance = approved_records.filter(transaction_type='balance').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+    total_advances = approved_records.filter(transaction_type='advance').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+    total_advance_paybacks = AdvancePayback.objects.aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
     
-    total_expense = Record.objects.filter(
-        transaction_type='expense'
-    ).aggregate(Sum('total_value'))['total_value__sum'] or Decimal('0.00')
+    # Calculate outstanding advances
+    outstanding_advances = total_advances - total_advance_paybacks
     
-    total_advance = Record.objects.filter(
-        transaction_type='advance'
-    ).aggregate(Sum('total_value'))['total_value__sum'] or Decimal('0.00')
+    # Calculate net profit
+    net_profit = total_income - total_expenses
     
-    # Calculate total balance
-    total_balance = total_income - total_expense - total_advance
+    # Calculate cash flow
+    cash_flow = total_income - total_expenses - outstanding_advances
     
-    # Get recent records with specific fields only
-    recent_records = Record.objects.only(
-        'date',
-        'transaction_type',
-        'item_name',
-        'total_value',
-        'reviewer_result'
-    ).order_by('-date')[:5]
+    # Calculate profit margin
+    profit_margin = (net_profit / total_income * 100) if total_income > 0 else Decimal('0.00')
+    
+    # Calculate cash flow ratio
+    cash_flow_ratio = (cash_flow / total_expenses) if total_expenses > 0 else Decimal('0.00')
+    
+    # Calculate advance recovery rate
+    advance_recovery_rate = (total_advance_paybacks / total_advances * 100) if total_advances > 0 else Decimal('0.00')
+    
+    # Calculate operating efficiency
+    total_transactions = total_income + total_expenses
+    operating_efficiency = (net_profit / total_transactions * 100) if total_transactions > 0 else Decimal('0.00')
     
     # Get monthly data for charts
-    monthly_data = Record.objects.annotate(
-        month=TruncMonth('date')
-    ).values('month').annotate(
-        income=Sum(Case(
-            When(transaction_type='income', then='total_value'),
-            default=0,
-            output_field=DecimalField(),
-        )),
-        expense=Sum(Case(
-            When(transaction_type='expense', then='total_value'),
-            default=0,
-            output_field=DecimalField(),
-        ))
-    ).order_by('month')
+    today = timezone.now()
+    last_12_months = [(today - timezone.timedelta(days=x*30)).strftime('%B %Y') for x in range(11, -1, -1)]
+    monthly_income = []
+    monthly_expenses = []
     
-    # Prepare data for charts
-    monthly_labels = [d['month'].strftime("%B %Y") for d in monthly_data]
-    monthly_income = [float(d['income']) for d in monthly_data]
-    monthly_expense = [float(d['expense']) for d in monthly_data]
+    for month in range(11, -1, -1):
+        month_start = today.replace(day=1) - timezone.timedelta(days=month*30)
+        month_end = (month_start + timezone.timedelta(days=32)).replace(day=1)
+        
+        month_income = approved_records.filter(
+            transaction_type='income',
+            created_at__gte=month_start,
+            created_at__lt=month_end
+        ).aggregate(Sum('amount'))['amount__sum'] or 0
+        
+        month_expenses = approved_records.filter(
+            transaction_type='expense',
+            created_at__gte=month_start,
+            created_at__lt=month_end
+        ).aggregate(Sum('amount'))['amount__sum'] or 0
+        
+        monthly_income.append(float(month_income))
+        monthly_expenses.append(float(month_expenses))
     
-    # Get expense categories data (using item_type instead of category)
-    expense_categories_data = Record.objects.filter(
-        transaction_type='expense'
-    ).values('item_type').annotate(
-        total=Sum('total_value')
-    ).order_by('-total')[:5]
+    # Get high-value transactions (top 10 by amount)
+    high_value_transactions = approved_records.order_by('-amount')[:10]
     
-    expense_categories = [d['item_type'] for d in expense_categories_data]
-    category_amounts = [float(d['total']) for d in expense_categories_data]
+    # Calculate profit growth (compare with last month)
+    current_month_profit = monthly_income[-1] - monthly_expenses[-1]
+    last_month_profit = monthly_income[-2] - monthly_expenses[-2]
+    profit_growth = ((current_month_profit - last_month_profit) / last_month_profit * 100) if last_month_profit != 0 else 0
+    
+    # Get pending amount
+    pending_amount = Record.objects.filter(status='pending').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
     
     context = {
+        # Record counts
         'total_records': total_records,
-        'pending_count': pending_count,
-        'approved_count': approved_count,
-        'rejected_count': rejected_count,
+        'pending_records': pending_records,
+        'approved_records': approved_records_count,
+        'rejected_records': rejected_records,
+        'pending_count': pending_records,
+        
+        # Financial totals
         'total_income': total_income,
-        'total_expense': total_expense,
-        'total_advance': total_advance,
+        'total_expenses': total_expenses,
         'total_balance': total_balance,
-        'recent_records': recent_records,
-        'monthly_labels': json.dumps(monthly_labels),
-        'monthly_income': json.dumps(monthly_income),
-        'monthly_expense': json.dumps(monthly_expense),
-        'expense_categories': json.dumps(expense_categories),
-        'category_amounts': json.dumps(category_amounts),
+        'total_advances': total_advances,
+        'outstanding_advances': outstanding_advances,
+        'net_profit': net_profit,
+        'cash_flow': cash_flow,
+        'pending_amount': pending_amount,
+        
+        # Financial metrics
+        'profit_margin': profit_margin,
+        'cash_flow_ratio': cash_flow_ratio,
+        'advance_recovery_rate': advance_recovery_rate,
+        'operating_efficiency': operating_efficiency,
+        'profit_growth': profit_growth,
+        
+        # Status indicators
+        'profit_margin_status': 'Good' if profit_margin > 20 else 'Needs Improvement',
+        'cash_flow_status': 'Positive' if cash_flow > 0 else 'Negative',
+        'recovery_status': 'Good' if advance_recovery_rate > 80 else 'Needs Follow-up',
+        'efficiency_status': 'Efficient' if operating_efficiency > 85 else 'Needs Optimization',
+        
+        # Chart data
+        'monthly_labels': last_12_months,
+        'monthly_income': monthly_income,
+        'monthly_expenses': monthly_expenses,
+        'advance_count': approved_records.filter(transaction_type='advance').exclude(
+            id__in=AdvancePayback.objects.filter(is_fully_paid=True).values_list('advance_id', flat=True)
+        ).count(),
+        
+        # Transactions
+        'high_value_transactions': high_value_transactions,
     }
     
-    return render(request, 'dashboard.html', context)
+    return render(request, 'website/dashboard.html', context)
 
-def edit_record(request, pk):
-    record = get_object_or_404(Record, pk=pk)
-    if request.method == 'POST':
-        form = AddRecordForm(request.POST, instance=record)
-        if form.is_valid():
-            form.save()
-            return redirect('home')
-    else:
-        form = AddRecordForm(instance=record)
-    
-    context = {
-        'form': form,
-        'record': record
-    }
-    return render(request, 'edit_record.html', context)
+class LandingPageView(TemplateView):
+    template_name = 'landing.html'
 
-def delete_record(request, pk):
-    record = get_object_or_404(Record, pk=pk)
-    if request.method == 'POST':
-        record.delete()
-        return redirect('home')
-    return render(request, 'delete_record.html', {'record': record})
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect('website:home')
+        return super().get(request, *args, **kwargs)
+
+class UserSettingsView(ActivityTrackingMixin, LoginRequiredMixin, UpdateView):
+    model = UserSettings
+    form_class = UserSettingsForm
+    template_name = 'website/user_settings.html'
+    success_url = '/website/settings/'
+
+    def get_object(self, queryset=None):
+        return UserSettings.objects.get_or_create(user=self.request.user)[0]
+
+class RecordListView(LoginRequiredMixin, ListView):
+    model = Record
+    template_name = 'website/record_list.html'
+    context_object_name = 'records'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return Record.objects.all().order_by('-created_at')
+
+class BalanceRecordListView(RecordListView):
+    def get_queryset(self):
+        return super().get_queryset().filter(transaction_type='balance')
+
+class IncomeRecordListView(RecordListView):
+    def get_queryset(self):
+        return super().get_queryset().filter(transaction_type='income')
+
+class ExpenseRecordListView(RecordListView):
+    def get_queryset(self):
+        return super().get_queryset().filter(transaction_type='expense')
+
+class AdvanceRecordListView(RecordListView):
+    def get_queryset(self):
+        return super().get_queryset().filter(transaction_type='advance')
+
+class MyRecordListView(RecordListView):
+    def get_queryset(self):
+        return super().get_queryset().filter(created_by=self.request.user)
+
+class ApprovedRecordListView(RecordListView):
+    def get_queryset(self):
+        return super().get_queryset().filter(status='approved')
+
+class RejectedRecordListView(RecordListView):
+    def get_queryset(self):
+        return super().get_queryset().filter(status='rejected')
+
+class PendingRecordListView(RecordListView):
+    def get_queryset(self):
+        return super().get_queryset().filter(status='pending')
 
 @login_required
 def record_detail(request, pk):
+    """
+    Display detailed information about a specific record.
+    """
     record = get_object_or_404(Record, pk=pk)
-    user = request.user
-    
-    # Determine if the current user can approve this record
-    can_approve = False
-    if user.user_type == 'deputy_director' and record.approval_status == 'pending_deputy':
-        can_approve = True
-    elif user.user_type == 'executive_director' and record.approval_status == 'pending_executive':
-        can_approve = True
-    elif user.user_type == 'chief_executive' and record.approval_status == 'pending_chief':
-        can_approve = True
-        
-    # Get approval history
-    approval_history = []
-    if record.deputy_director_approval:
-        approval_history.append({
-            'approver': user,
-            'role': 'Deputy Director',
-            'date': timezone.now(),
-            'comments': record.deputy_director_comments
-        })
-    if record.executive_director_approval:
-        approval_history.append({
-            'approver': user,
-            'role': 'Executive Director',
-            'date': timezone.now(),
-            'comments': record.executive_director_comments
-        })
-    if record.chief_executive_approval:
-        approval_history.append({
-            'approver': user,
-            'role': 'Chief Executive',
-            'date': timezone.now(),
-            'comments': record.chief_executive_comments
-        })
-    
     context = {
         'record': record,
-        'can_approve': can_approve,
-        'can_edit': user.user_type in ['superadmin', 'data_entry'] or user == record.requester,
-        'approval_history': approval_history,
-        'notifications': Notification.objects.filter(record=record).order_by('-created_at')[:5]
     }
-    return render(request, 'record_detail.html', context)
+    return render(request, 'website/record_detail.html', context)
 
 @login_required
-@user_type_required('deputy_director', 'executive_director', 'chief_executive')
 def record_approval(request, pk):
+    """Handle record approval/rejection process."""
     record = get_object_or_404(Record, pk=pk)
-    user = request.user
+    
+    if not record.can_approve(request.user):
+        messages.error(request, "You don't have permission to approve this record at its current stage.")
+        return redirect('website:record_detail', pk=pk)
     
     if request.method == 'POST':
         status = request.POST.get('status')
         comments = request.POST.get('comments', '')
         
-        try:
-            # Use the process_approval method from the Record model
-            record.process_approval(user, status, comments)
-            
-            # Create notification for record owner
-            Notification.objects.create(
-                user=record.requester,
+        if status in ['approved', 'rejected']:
+            # Create approval record
+            approval = RecordApproval.objects.create(
                 record=record,
-                message=f'Your record #{record.id} has been {status} by {user.get_full_name()}'
+                user=request.user,
+                approval_level=request.user.user_type,
+                status=status,
+                comments=comments
             )
             
-            # Create notification for next approver if applicable
-            if status == 'approved' and user.user_type != 'chief_executive':
-                next_approver_type = {
-                    'deputy_director': 'executive_director',
-                    'executive_director': 'chief_executive'
-                }[user.user_type]
-                
+            # Update record status based on user type and decision
+            if status == 'approved':
+                if request.user.user_type == 'deputy_director':
+                    record.status = 'pending_executive'
+                    record.deputy_approved = True
+                    next_approver_type = 'executive_director'
+                elif request.user.user_type == 'executive_director':
+                    record.status = 'pending_ceo'
+                    record.executive_approved = True
+                    next_approver_type = 'chief_executive'
+                elif request.user.user_type == 'chief_executive':
+                    record.status = 'approved'
+                    record.ceo_approved = True
+                    next_approver_type = None
+            else:  # rejected
+                if request.user.user_type == 'deputy_director':
+                    record.status = 'rejected_deputy'
+                elif request.user.user_type == 'executive_director':
+                    record.status = 'rejected_executive'
+                elif request.user.user_type == 'chief_executive':
+                    record.status = 'rejected_ceo'
+            
+            record.save()
+            
+            # Create notification for next approver or record creator
+            if status == 'approved' and next_approver_type:
                 next_approvers = User.objects.filter(user_type=next_approver_type)
                 for approver in next_approvers:
                     Notification.objects.create(
                         user=approver,
-                        record=record,
-                        message=f'New record #{record.id} requires your approval'
+                        title=f'Record Needs Your Approval',
+                        message=f'Record {record.reference_number} has been approved by {request.user.get_full_name()} and needs your review.',
+                        record=record
                     )
             
-            messages.success(request, f"Record has been {status}")
-            return redirect('record_detail', pk=pk)
+            # Notify record creator
+            Notification.objects.create(
+                user=record.created_by,
+                title=f'Record {status.title()}',
+                message=f'Your record {record.reference_number} has been {status} by {request.user.get_full_name()}.',
+                record=record
+            )
             
-        except ValueError as e:
-            messages.error(request, str(e))
-            return redirect('record_detail', pk=pk)
+            # Create user activity
+            UserActivity.objects.create(
+                user=request.user,
+                activity_type='record_approve' if status == 'approved' else 'record_reject',
+                description=f'{status.title()} record: {record.reference_number}',
+                record=record
+            )
+            
+            messages.success(request, f"Record has been {status}.")
+            
+    return redirect('website:record_detail', pk=pk)
+
+@login_required
+def forward_to_deputy(request, pk):
+    """Forward a record from cashier to deputy director."""
+    record = get_object_or_404(Record, pk=pk)
     
-    return render(request, 'approval_form.html', {
-        'record': record,
-        'can_approve': True,
-        'previous_approvals': record.approval_history or []
+    if request.user.user_type != 'cashier' or record.forwarded_to_deputy:
+        messages.error(request, "You don't have permission to forward this record.")
+        return redirect('website:record_detail', pk=pk)
+    
+    if request.method == 'POST':
+        comments = request.POST.get('comments', '')
+        
+        # Update record status
+        record.status = 'pending_deputy'
+        record.forwarded_to_deputy = True
+        record.save()
+        
+        # Create approval record for cashier's review
+        RecordApproval.objects.create(
+            record=record,
+            user=request.user,
+            approval_level='cashier',
+            status='forwarded',
+            comments=comments
+        )
+        
+        # Notify deputy directors
+        deputy_directors = User.objects.filter(user_type='deputy_director')
+        for deputy in deputy_directors:
+            Notification.objects.create(
+                user=deputy,
+                title='New Record for Review',
+                message=f'Record {record.reference_number} has been forwarded for your approval.',
+                record=record
+            )
+        
+        # Create user activity
+        UserActivity.objects.create(
+            user=request.user,
+            activity_type='record_forward',
+            description=f'Forwarded record {record.reference_number} to Deputy Director',
+            record=record
+        )
+        
+        messages.success(request, "Record has been forwarded to Deputy Director for approval.")
+    
+    return redirect('website:record_detail', pk=pk)
+
+@login_required
+def add_record(request):
+    if request.method == 'POST':
+        try:
+            # Get form data
+            transaction_type = request.POST.get('transaction_type')
+            amount = request.POST.get('amount')
+            date = request.POST.get('date')
+            description = request.POST.get('description')
+            balance_type = request.POST.get('balance_type')
+            
+            # Create record
+            record = Record.objects.create(
+                transaction_type=transaction_type,
+                amount=amount,
+                date=date,
+                description=description,
+                balance_type=balance_type,
+                created_by=request.user,
+                status='pending'
+            )
+            
+            print(f"Record saved successfully: {record.id}")
+            
+            # Create notification for staff users
+            try:
+                # Get all staff users except the current user
+                staff_users = User.objects.filter(is_staff=True).exclude(id=request.user.id)
+                
+                for staff_user in staff_users:
+                    Notification.objects.create(
+                        user=staff_user,
+                        title='New Record Added',
+                        message=f'A new {transaction_type} record has been added by {request.user.get_full_name() or request.user.username}',
+                        record=record,
+                        notification_type='record_status'
+                    )
+                    
+                # Also create a notification for superusers if they're not staff
+                superusers = User.objects.filter(is_superuser=True, is_staff=False)
+                for superuser in superusers:
+                    Notification.objects.create(
+                        user=superuser,
+                        title='New Record Added',
+                        message=f'A new {transaction_type} record has been added by {request.user.get_full_name() or request.user.username}',
+                        record=record,
+                        notification_type='record_status'
+                    )
+                    
+            except Exception as e:
+                print(f"Error creating notifications: {str(e)}")
+            
+            # Send WebSocket notification
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                
+                channel_layer = get_channel_layer()
+                notification_data = {
+                    'type': 'notification',
+                    'notification': {
+                        'title': 'New Record Added',
+                        'message': f'A new {transaction_type} record has been added by {request.user.get_full_name() or request.user.username}',
+                        'record_id': record.id,
+                        'notification_id': record.id
+                    }
+                }
+                
+                # Send to all staff users
+                for user in staff_users:
+                    async_to_sync(channel_layer.group_send)(
+                        f'user_{user.id}_notifications',
+                        notification_data
+                    )
+                
+                # Send to superusers
+                for user in superusers:
+                    async_to_sync(channel_layer.group_send)(
+                        f'user_{user.id}_notifications',
+                        notification_data
+                    )
+                    
+            except Exception as e:
+                print(f"Error sending WebSocket notification: {str(e)}")
+            
+            return JsonResponse({
+                'status': 'success', 
+                'message': 'Record added successfully',
+                'record_id': record.id
+            })
+            
+        except Exception as e:
+            print(f"Error saving record: {str(e)}")
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+
+@login_required
+def edit_record(request, pk):
+    """Handle editing of existing records."""
+    record = get_object_or_404(Record, pk=pk)
+    
+    # Check if user has permission to edit
+    if not request.user.can_edit_record():
+        messages.error(request, "You don't have permission to edit records.")
+        return redirect('website:record_detail', pk=pk)
+    
+    if request.method == 'POST':
+        form = RecordForm(request.POST, instance=record)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Record updated successfully.")
+            return redirect('website:record_detail', pk=pk)
+    else:
+        form = RecordForm(instance=record)
+    
+    return render(request, 'website/record_form.html', {
+        'form': form,
+        'title': 'Edit Record',
+        'button_text': 'Update Record',
+        'record': record
     })
 
 @login_required
 def notifications(request):
-    notifications_queryset = Notification.objects.filter(user=request.user)
+    """View for displaying all notifications"""
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    unread_notifications = notifications.filter(is_read=False)
+    
     context = {
-        'notifications': notifications_queryset.order_by('-created_at'),
-        'unread_count': notifications_queryset.filter(is_read=False).count()
+        'notifications': notifications,
+        'unread_count': unread_notifications.count(),
     }
-    return render(request, 'notifications.html', context)
+    return render(request, 'website/notifications.html', context)
 
 @login_required
 def mark_notification_read(request, pk):
+    """
+    Mark a specific notification as read.
+    """
     notification = get_object_or_404(Notification, pk=pk, user=request.user)
-    notification.is_read = True
+    notification.read = True
     notification.save()
-    return JsonResponse({'status': 'success'})
-
-@login_required
-def mark_all_notifications_read(request):
-    if request.method == 'POST':
-        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    
+    # If this is an AJAX request, return JSON response
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'status': 'success'})
-    return JsonResponse({'status': 'error'}, status=405)
+    
+    # If there's a next URL in query params, redirect there
+    next_url = request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+    
+    # Otherwise redirect to notifications list
+    return redirect('website:notifications')
 
 @login_required
-@user_type_required('superadmin')
-def user_list(request):
-    users = get_user_model().objects.all().order_by('-date_joined')
-    context = {
-        'users': users
-    }
-    return render(request, 'user_list.html', context)
-
-@login_required
-@user_type_required('superadmin')
-def create_user(request):
+def mark_all_notifications_as_read(request):
     if request.method == 'POST':
-        # Add user creation logic here
-        pass
-    return render(request, 'create_user.html')
+        request.user.notifications.filter(is_read=False).update(is_read=True)
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'}, status=400)
+
+class UserListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """
+    Display list of users. Only accessible by staff members.
+    """
+    model = User
+    template_name = 'website/user_list.html'
+    context_object_name = 'users'
+    paginate_by = 10
+    
+    def test_func(self):
+        """Only allow staff members to access this view."""
+        return self.request.user.is_superuser and self.request.user.user_type == 'admin'
+    
+    def get_queryset(self):
+        """Return all users ordered by date joined."""
+        return self.model.objects.all().order_by('-date_joined')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'User List'
+        return context
+
+class UserCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """
+    View for creating new users. Only accessible by staff members.
+    """
+    model = User
+    form_class = UserForm
+    template_name = 'website/user_form.html'
+    success_url = reverse_lazy('website:user_list')
+    
+    def test_func(self):
+        """Only allow staff members to access this view."""
+        return self.request.user.is_superuser and self.request.user.user_type == 'admin'
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, "User created successfully.")
+        return response
+
+class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """
+    View for updating existing users. Only accessible by staff members.
+    """
+    model = User
+    form_class = UserEditForm
+    template_name = 'website/user_form.html'
+    success_url = reverse_lazy('website:user_list')
+    
+    def test_func(self):
+        """Only allow staff members to access this view."""
+        return self.request.user.is_superuser and self.request.user.user_type == 'admin'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = f'Edit User: {self.object.username}'
+        return context
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, "User updated successfully.")
+        return response
+
+class UserDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """
+    View for deleting users. Only accessible by staff members.
+    """
+    model = User
+    template_name = 'website/user_confirm_delete.html'
+    success_url = reverse_lazy('website:user_list')
+    
+    def test_func(self):
+        """
+        Only allow staff members to access this view.
+        Also prevent users from deleting themselves.
+        """
+        return (self.request.user.is_superuser and 
+                self.request.user.user_type == 'admin' and
+                self.request.user.pk != self.kwargs.get('pk'))
+    
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, "User deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+class UserPermissionsView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """
+    View for managing user permissions. Only accessible by staff members.
+    """
+    model = User
+    form_class = UserPermissionsForm
+    template_name = 'website/user_permissions.html'
+    success_url = reverse_lazy('website:user_list')
+    
+    def test_func(self):
+        """Only allow staff members to access this view."""
+        return self.request.user.is_superuser and self.request.user.user_type == 'admin'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = f'Edit Permissions: {self.object.username}'
+        return context
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, "User permissions updated successfully.")
+        return response
+
+class UserActivityListView(LoginRequiredMixin, ListView):
+    """
+    Display list of user activities.
+    """
+    model = UserActivity
+    template_name = 'website/activity_list.html'
+    context_object_name = 'activities'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        """Return activities filtered by user if specified."""
+        queryset = UserActivity.objects.all().select_related('user', 'record')
+        
+        # Filter by user if specified in URL parameters
+        user_id = self.request.GET.get('user')
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
+            
+        # Filter by activity type if specified
+        activity_type = self.request.GET.get('type')
+        if activity_type:
+            queryset = queryset.filter(activity_type=activity_type)
+            
+        return queryset.order_by('-created_at')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Activity Log'
+        context['activity_types'] = dict(UserActivity.ACTIVITY_TYPES)
+        context['selected_user'] = self.request.GET.get('user')
+        context['selected_type'] = self.request.GET.get('type')
+        return context
+
+@login_required
+def record_payback(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
+    
+    record_id = request.POST.get('record_id')
+    amount = Decimal(request.POST.get('amount', 0))
+    payment_date = request.POST.get('payment_date')
+    payment_method = request.POST.get('payment_method')
+    notes = request.POST.get('notes', '')
+    
+    try:
+        record = Record.objects.get(id=record_id, transaction_type='advance')
+    except Record.DoesNotExist:
+        return JsonResponse({'error': 'Record not found'}, status=404)
+    
+    # Calculate remaining amount
+    total_paid = AdvancePayback.objects.filter(advance=record).aggregate(
+        Sum('amount'))['amount__sum'] or 0
+    remaining = record.amount - total_paid
+    
+    # Validate payment amount
+    if amount <= 0 or amount > remaining:
+        return JsonResponse({'error': 'Invalid payment amount'}, status=400)
+    
+    # Create payback record
+    payback = AdvancePayback.objects.create(
+        advance=record,
+        amount=amount,
+        payment_date=payment_date,
+        payment_method=payment_method,
+        notes=notes,
+        created_by=request.user
+    )
+    
+    # Check if advance is fully paid
+    new_remaining = remaining - amount
+    if new_remaining == 0:
+        payback.is_fully_paid = True
+        payback.save()
+    
+    messages.success(request, f'Payment of {amount} AFN recorded successfully')
+    return redirect('website:home')
+
+@login_required
+def record_installments(request, record_id):
+    try:
+        record = Record.objects.get(id=record_id, transaction_type='advance')
+    except Record.DoesNotExist:
+        return JsonResponse({'error': 'Record not found'}, status=404)
+    
+    installments = AdvancePayback.objects.filter(advance=record).order_by('payment_date')
+    
+    data = {
+        'installments': [
+            {
+                'date': payment.payment_date.strftime('%Y-%m-%d'),
+                'amount': float(payment.amount),
+                'method': payment.get_payment_method_display(),
+                'notes': payment.notes
+            }
+            for payment in installments
+        ]
+    }
+    
+    return JsonResponse(data)
+
+@login_required
+def advance_repayment(request, pk):
+    """Handle advance repayment"""
+    advance = get_object_or_404(Record, pk=pk, transaction_type='advance')
+    
+    if request.method == 'POST':
+        amount = Decimal(request.POST.get('amount', 0))
+        payment_method = request.POST.get('payment_method')
+        notes = request.POST.get('notes', '')
+        
+        # Calculate total paid so far
+        total_paid = AdvancePayback.objects.filter(advance=advance).aggregate(Sum('amount'))['amount__sum'] or 0
+        remaining_amount = advance.amount - total_paid
+        
+        # Validate payment amount
+        if amount <= 0:
+            messages.error(request, 'Payment amount must be greater than zero.')
+            return redirect('website:record_detail', pk=pk)
+        
+        if amount > remaining_amount:
+            messages.error(request, f'Payment amount cannot exceed remaining amount ({remaining_amount}).')
+            return redirect('website:record_detail', pk=pk)
+        
+        # Create payback record
+        payback = AdvancePayback.objects.create(
+            advance=advance,
+            amount=amount,
+            payment_date=timezone.now().date(),
+            payment_method=payment_method,
+            notes=notes,
+            created_by=request.user,
+            is_fully_paid=(amount >= remaining_amount)
+        )
+        
+        # Create activity log
+        UserActivity.objects.create(
+            user=request.user,
+            activity_type='advance_repayment',
+            description=f'Repaid {amount} for advance {advance.reference_number}',
+            record=advance
+        )
+        
+        messages.success(request, f'Payment of {amount} recorded successfully.')
+        return redirect('website:record_detail', pk=pk)
+    
+    # Get remaining amount
+    total_paid = AdvancePayback.objects.filter(advance=advance).aggregate(Sum('amount'))['amount__sum'] or 0
+    remaining_amount = advance.amount - total_paid
+    
+    context = {
+        'advance': advance,
+        'remaining_amount': remaining_amount,
+        'payment_methods': AdvancePayback.PAYMENT_METHODS,
+    }
+    
+    return render(request, 'website/advance_repayment.html', context)
+
+@login_required
+def user_profile(request):
+    """Display user profile."""
+    return render(request, 'website/user_management/profile.html', {
+        'user': request.user
+    })
+
+@login_required
+def profile_edit(request):
+    """Edit user profile."""
+    if request.method == 'POST':
+        form = UserEditForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated successfully.')
+            return redirect('website:user_profile')
+    else:
+        form = UserEditForm(instance=request.user)
+    
+    return render(request, 'website/user_management/profile_edit.html', {
+        'form': form
+    })
+
+@login_required
+def password_change(request):
+    """Change user password."""
+    if request.method == 'POST':
+        form = PasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            form.save()
+            update_session_auth_hash(request, form.user)
+            messages.success(request, 'Your password was successfully updated!')
+            return redirect('website:user_profile')
+    else:
+        form = PasswordChangeForm(user=request.user)
+    
+    return render(request, 'website/user_management/password_change.html', {
+        'form': form
+    })
+
+@login_required
+def payable_repayment(request, pk):
+    """Handle payable record repayment."""
+    record = get_object_or_404(Record, pk=pk, transaction_type='payable')
+    
+    if request.method == 'POST':
+        amount = request.POST.get('amount')
+        payment_method = request.POST.get('payment_method')
+        payment_date = request.POST.get('payment_date')
+        notes = request.POST.get('notes', '')
+        
+        if not all([amount, payment_method, payment_date]):
+            messages.error(request, 'Please fill in all required fields.')
+            return redirect('website:record_detail', pk=pk)
+        
+        try:
+            amount = Decimal(amount)
+            if amount <= 0:
+                messages.error(request, 'Amount must be greater than zero.')
+                return redirect('website:record_detail', pk=pk)
+            
+            if amount > record.amount:
+                messages.error(request, 'Payment amount cannot exceed the payable amount.')
+                return redirect('website:record_detail', pk=pk)
+            
+            # Update payable record
+            if amount >= record.amount:
+                record.is_paid = True
+                record.save()
+            
+            # Create user activity
+            UserActivity.objects.create(
+                user=request.user,
+                activity_type='record_update',
+                description=f'Recorded payment of {amount} AFN for payable {record.reference_number}',
+                record=record
+            )
+            
+            # Create notification for record creator
+            Notification.objects.create(
+                user=record.created_by,
+                title='Payable Payment Recorded',
+                message=f'A payment of {amount} AFN has been recorded for your payable record {record.reference_number}.',
+                record=record
+            )
+            
+            messages.success(request, f'Payment of {amount} AFN has been recorded successfully.')
+            
+        except (ValueError, decimal.InvalidOperation) as e:
+            messages.error(request, f'Invalid amount format: {str(e)}')
+        except Exception as e:
+            messages.error(request, f'Error processing payment: {str(e)}')
+            
+    return redirect('website:record_detail', pk=pk)
+
+# Add to existing views
+class PayableRecordListView(RecordListView):
+    def get_queryset(self):
+        return super().get_queryset().filter(transaction_type='payable')
+
+@login_required
+def delete_all_records(request):
+    """Delete all records and reset the database sequence. Only accessible by admin users."""
+    if not request.user.is_superuser:
+        messages.error(request, "You don't have permission to perform this action.")
+        return redirect('website:home')
+    
+    if request.method == 'POST':
+        try:
+            # Delete all records
+            Record.objects.all().delete()
+            
+            # Reset the sequence for the Record model
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("DELETE FROM sqlite_sequence WHERE name='website_record'")
+            
+            # Create activity log
+            UserActivity.objects.create(
+                user=request.user,
+                activity_type='record_delete',
+                description='Deleted all records and reset database sequence'
+            )
+            
+            messages.success(request, "All records have been deleted and the database sequence has been reset.")
+        except Exception as e:
+            messages.error(request, f"Error deleting records: {str(e)}")
+    
+    return redirect('website:home')

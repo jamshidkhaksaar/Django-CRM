@@ -2,6 +2,8 @@ from django.db.models import Q
 from functools import lru_cache
 from enum import Enum
 from typing import Dict, Any
+from .models import UserActivity
+from django.utils import timezone
 
 @lru_cache(maxsize=None)
 def get_status_mapping():
@@ -110,3 +112,40 @@ def get_user_status_context(user, records) -> Dict[str, Any]:
         })
     
     return context 
+
+def log_user_activity(user, activity_type, description, record=None, ip_address=None):
+    """
+    Log user activity in the database
+    """
+    UserActivity.objects.create(
+        user=user,
+        activity_type=activity_type,
+        description=description,
+        record=record,
+        ip_address=ip_address,
+        created_at=timezone.now()
+    )
+
+def get_client_ip(request):
+    """
+    Get client IP address from request
+    """
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+def mask_sensitive_data(data):
+    """
+    Mask sensitive data in logs
+    """
+    sensitive_fields = ['password', 'credit_card', 'ssn']
+    masked_data = data.copy()
+    
+    for field in sensitive_fields:
+        if field in masked_data:
+            masked_data[field] = '****'
+    
+    return masked_data

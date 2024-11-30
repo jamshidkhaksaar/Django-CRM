@@ -1,44 +1,89 @@
 {% extends 'base.html' %}
+{% load widget_tweaks %}
 {% block content %}
-
 <div class="container mt-4">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="mb-0">Edit Record</h3>
-                    <form action="{% url 'delete_record' record.pk %}" method="POST" class="d-inline" id="deleteForm">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">
-                            <i class="fas fa-trash-alt"></i> Delete
-                        </button>
-                    </form>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="{% url 'edit_record' record.pk %}">
-                        {% csrf_token %}
-                        {% for field in form %}
-                        <div class="mb-3">
-                            <label for="{{ field.id_for_label }}" class="form-label">
-                                {{ field.label }}
-                            </label>
-                            {{ field }}
-                            {% if field.help_text %}
-                            <div class="form-text">{{ field.help_text }}</div>
-                            {% endif %}
-                            {% if field.errors %}
-                            <div class="alert alert-danger">
-                                {{ field.errors }}
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                        <div class="d-flex justify-content-between">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Update Record
+        <div class="col-md-10 offset-md-1">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
+                    <h3 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Edit Balance Entry Record
+                    </h3>
+                    <div>
+                        <span class="badge {% if record.approval_status == 'approved' %}bg-success{% elif record.approval_status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %} me-3">
+                            Status: {{ record.get_approval_status_display }}
+                        </span>
+                        <form action="{% url 'delete_record' record.pk %}" method="POST" class="d-inline" id="deleteForm">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash-alt"></i> Delete
                             </button>
-                            <a href="{% url 'home' %}" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Cancel
+                        </form>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{% url 'edit_record' record.pk %}" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <input type="hidden" name="transaction_type" value="{{ record.transaction_type }}">
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Record Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Reference Number</label>
+                                        <input type="text" class="form-control" value="{{ record.reference_number }}" readonly>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_date" class="form-label fw-bold">Date</label>
+                                        {% render_field form.date type="date" class="form-control" %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_amount" class="form-label fw-bold">Amount</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-money-bill"></i></span>
+                                            {% render_field form.amount class="form-control" type="number" step="0.01" %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_currency" class="form-label fw-bold">Currency</label>
+                                        <select name="currency" id="id_currency" class="form-select" required>
+                                            <option value="AFN" {% if record.currency == 'AFN' %}selected{% endif %}>AFN</option>
+                                            <option value="USD" {% if record.currency == 'USD' %}selected{% endif %}>USD</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_payment_mode" class="form-label fw-bold">Payment Mode</label>
+                                        <select name="payment_mode" id="id_payment_mode" class="form-select" required>
+                                            <option value="">Select Payment Mode</option>
+                                            <option value="cash" {% if record.payment_mode == 'cash' %}selected{% endif %}>Cash</option>
+                                            <option value="check" {% if record.payment_mode == 'check' %}selected{% endif %}>Check</option>
+                                            <option value="bank_transfer" {% if record.payment_mode == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_description" class="form-label fw-bold">Description</label>
+                                        {% render_field form.description class="form-control" %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i> Save Changes
+                            </button>
+                            <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times me-2"></i> Cancel
                             </a>
                         </div>
                     </form>
@@ -48,57 +93,24 @@
     </div>
 </div>
 
-<style>
-    .card {
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    }
-    
-    .card-header {
-        background-color: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
-    }
-    
-    .form-control:focus {
-        border-color: #80bdff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    }
-    
-    .btn {
-        padding: 0.375rem 1rem;
-    }
-    
-    .btn-primary {
-        background-color: #007bff;
-        border-color: #007bff;
-    }
-    
-    .btn-primary:hover {
-        background-color: #0069d9;
-        border-color: #0062cc;
-    }
-    
-    .btn-danger {
-        background-color: #dc3545;
-        border-color: #dc3545;
-    }
-    
-    .btn-danger:hover {
-        background-color: #c82333;
-        border-color: #bd2130;
-    }
-</style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const deleteForm = document.getElementById('deleteForm');
-    if (deleteForm) {
-        deleteForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (confirm('Are you sure you want to delete this record?')) {
-                this.submit();
-            }
-        });
+    // Initialize date picker with current value
+    const dateField = document.getElementById('id_date');
+    if (dateField && !dateField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateField.value = today;
     }
+
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
 });
 </script>
 {% endblock %} 

@@ -1,0 +1,58 @@
+.activity-timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.activity-item {
+    position: relative;
+    padding-left: 40px;
+    margin-bottom: 20px;
+}
+
+.activity-marker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #007bff;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #007bff;
+}
+
+.activity-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.activity-time {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.activity-description {
+    margin-top: 5px;
+}
+
+.activity-user {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.activity-type {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.activity-type-login { background-color: #28a745; color: white; }
+.activity-type-logout { background-color: #dc3545; color: white; }
+.activity-type-create { background-color: #007bff; color: white; }
+.activity-type-update { background-color: #ffc107; color: black; }
+.activity-type-delete { background-color: #dc3545; color: white; } 

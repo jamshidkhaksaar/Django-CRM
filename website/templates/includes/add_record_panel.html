@@ -2,22 +2,352 @@
     <div class="panel-content">
         <span id="close-panel-button" class="close-btn" onclick="closePanel()">&times;</span>
         <h2>Add Record</h2>
+        
         <form method="POST" action="{% url 'add_record' %}" id="addRecordForm">
             {% csrf_token %}
-            {% for field in add_record_form %}
+            
+            <!-- Transaction Type Selection -->
             <div class="mb-3">
-                <label for="{{ field.id_for_label }}" class="form-label">
-                    {{ field.label }}{% if field.field.required %}*{% endif %}
-                </label>
-                {{ field }}
-                {% if field.errors %}
-                <div class="invalid-feedback">
-                    {{ field.errors }}
-                </div>
-                {% endif %}
+                <label for="id_transaction_type" class="form-label">Transaction Type*</label>
+                <select name="transaction_type" id="id_transaction_type" class="form-control" required>
+                    <option value="">Select Type</option>
+                    <option value="balance">Balance Entry</option>
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                    <option value="advance">Advance</option>
+                </select>
             </div>
-            {% endfor %}
-            <button type="submit" class="btn btn-primary w-100">Submit Record</button>
+
+            <!-- Balance Entry Fields -->
+            <div id="balance-fields" style="display: none;">
+                <div class="mb-3">
+                    <label for="id_date" class="form-label">Date*</label>
+                    <input type="date" name="date" id="id_date" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_currency" class="form-label">Currency*</label>
+                    <select name="currency" id="id_currency" class="form-control" required onchange="toggleExchangeRate()">
+                        <option value="AFN">AFN</option>
+                        <option value="USD">USD</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_amount" class="form-label">Amount*</label>
+                    <input type="number" name="amount" id="id_amount" class="form-control" step="0.01" required>
+                </div>
+                <div class="mb-3 exchange-rate-field" style="display: none;">
+                    <label for="id_exchange_rate" class="form-label">Exchange Rate (USD to AFN)*</label>
+                    <input type="number" name="exchange_rate" id="id_exchange_rate" class="form-control" step="0.01">
+                </div>
+                <div class="mb-3">
+                    <label for="id_total_value" class="form-label">Total Value*</label>
+                    <input type="number" name="total_value" id="id_total_value" class="form-control" step="0.01" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_comments" class="form-label">Comments</label>
+                    <textarea name="comments" id="id_comments" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- Income Fields -->
+            <div id="income-fields" style="display: none;">
+                <div class="mb-3">
+                    <label for="id_income_date" class="form-label">Transaction Date*</label>
+                    <input type="date" name="date" id="id_income_date" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_income_source" class="form-label">Source of Income*</label>
+                    <select name="income_source" id="id_income_source" class="form-control" required>
+                        <option value="donation">Donation</option>
+                        <option value="sale">Sale</option>
+                        <option value="rent">Rent</option>
+                        <option value="investment">Investment</option>
+                        <option value="service">Service</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_income_department" class="form-label">Department/Project</label>
+                    <input type="text" name="department" id="id_income_department" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="id_income_currency" class="form-label">Currency*</label>
+                    <select name="currency" id="id_income_currency" class="form-control" required>
+                        <option value="AFN">AFN</option>
+                        <option value="USD">USD</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_income_amount" class="form-label">Amount*</label>
+                    <input type="number" name="amount" id="id_income_amount" class="form-control" step="0.01" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_income_payment_mode" class="form-label">Payment Mode*</label>
+                    <select name="payment_mode" id="id_income_payment_mode" class="form-control" required>
+                        <option value="cash">Cash</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="check">Check</option>
+                        <option value="online">Online Payment</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_payer_name" class="form-label">Payer/Donor Name*</label>
+                    <input type="text" name="payer_name" id="id_payer_name" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_income_invoice" class="form-label">Invoice/Receipt Number</label>
+                    <input type="text" name="invoice_number" id="id_income_invoice" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="id_received_by" class="form-label">Received By*</label>
+                    <input type="text" name="received_by" id="id_received_by" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_income_description" class="form-label">Description*</label>
+                    <textarea name="description" id="id_income_description" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="id_income_terms" class="form-label">Terms/Conditions</label>
+                    <textarea name="terms" id="id_income_terms" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- Expense Fields -->
+            <div id="expense-fields" style="display: none;">
+                <div class="mb-3">
+                    <label for="id_expense_date" class="form-label">Date*</label>
+                    <input type="date" name="date" id="id_expense_date" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_expense_category" class="form-label">Expense Category*</label>
+                    <select name="expense_category" id="id_expense_category" class="form-control" required>
+                        <option value="utilities">Utilities</option>
+                        <option value="travel">Travel</option>
+                        <option value="office_supplies">Office Supplies</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_expense_currency" class="form-label">Currency*</label>
+                    <select name="currency" id="id_expense_currency" class="form-control" required>
+                        <option value="AFN">AFN</option>
+                        <option value="USD">USD</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_expense_amount" class="form-label">Amount*</label>
+                    <input type="number" name="amount" id="id_expense_amount" class="form-control" step="0.01" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_expense_payment_mode" class="form-label">Payment Mode*</label>
+                    <select name="payment_mode" id="id_expense_payment_mode" class="form-control" required>
+                        <option value="cash">Cash</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="check">Check</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_vendor_name" class="form-label">Vendor/Supplier Name*</label>
+                    <input type="text" name="vendor_name" id="id_vendor_name" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_expense_invoice" class="form-label">Invoice/Bill Number</label>
+                    <input type="text" name="invoice_number" id="id_expense_invoice" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="id_requested_by" class="form-label">Requested By*</label>
+                    <input type="text" name="requested_by" id="id_requested_by" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_expense_description" class="form-label">Description*</label>
+                    <textarea name="description" id="id_expense_description" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="id_expense_justification" class="form-label">Justification</label>
+                    <textarea name="justification" id="id_expense_justification" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- Advance Fields -->
+            <div id="advance-fields" style="display: none;">
+                <div class="mb-3">
+                    <label for="id_advance_type" class="form-label">Advance Type*</label>
+                    <select name="advance_type" id="id_advance_type" class="form-control" required>
+                        <option value="personal">Personal</option>
+                        <option value="business">Business</option>
+                        <option value="purchase">Purchase</option>
+                        <option value="travel">Travel</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_advance_date" class="form-label">Date*</label>
+                    <input type="date" name="date" id="id_advance_date" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_recipient_name" class="form-label">Name of Recipient*</label>
+                    <input type="text" name="recipient_name" id="id_recipient_name" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_designation" class="form-label">Designation/Relationship</label>
+                    <input type="text" name="designation" id="id_designation" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="id_contact_info" class="form-label">Contact Information*</label>
+                    <input type="text" name="contact_info" id="id_contact_info" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_recipient_id" class="form-label">Recipient's ID/Account Number</label>
+                    <input type="text" name="recipient_id" id="id_recipient_id" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="id_advance_currency" class="form-label">Currency*</label>
+                    <select name="currency" id="id_advance_currency" class="form-control" required>
+                        <option value="AFN">AFN</option>
+                        <option value="USD">USD</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_advance_amount" class="form-label">Amount*</label>
+                    <input type="number" name="amount" id="id_advance_amount" class="form-control" step="0.01" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_advance_payment_mode" class="form-label">Payment Mode*</label>
+                    <select name="payment_mode" id="id_advance_payment_mode" class="form-control" required>
+                        <option value="cash">Cash</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="check">Check</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_purpose" class="form-label">Purpose/Reason*</label>
+                    <textarea name="purpose" id="id_purpose" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="id_repayment_deadline" class="form-label">Repayment Deadline*</label>
+                    <input type="date" name="repayment_deadline" id="id_repayment_deadline" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_repayment_method" class="form-label">Repayment Method*</label>
+                    <select name="repayment_method" id="id_repayment_method" class="form-control" required>
+                        <option value="salary_deduction">Salary Deduction</option>
+                        <option value="direct_payment">Direct Payment</option>
+                        <option value="installments">Installments</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_installment_plan" class="form-label">Installment Plan</label>
+                    <textarea name="installment_plan" id="id_installment_plan" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="id_advance_comments" class="form-label">Comments/Remarks</label>
+                    <textarea name="comments" id="id_advance_comments" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+
+            <div id="submit-button" style="display: none;">
+                <button type="submit" class="btn btn-primary w-100">Submit Record</button>
+            </div>
         </form>
     </div>
-</div> 
+</div>
+
+<script>
+    document.getElementById('id_transaction_type').addEventListener('change', function() {
+        const transactionType = this.value;
+        const allFields = ['balance-fields', 'income-fields', 'expense-fields', 'advance-fields'];
+        
+        // Hide all sections and disable their inputs
+        allFields.forEach(fieldId => {
+            const section = document.getElementById(fieldId);
+            if (section) {
+                section.style.display = 'none';
+                section.querySelectorAll('input, select, textarea').forEach(input => {
+                    input.disabled = true;
+                });
+            }
+        });
+
+        // If a transaction type is selected
+        if (transactionType) {
+            const selectedSection = document.getElementById(`${transactionType}-fields`);
+            if (selectedSection) {
+                // Show the selected section
+                selectedSection.style.display = 'block';
+                
+                // Enable all inputs in the section
+                selectedSection.querySelectorAll('input, select, textarea').forEach(input => {
+                    input.disabled = false;
+                });
+
+                // Handle amount field separately
+                const amountField = selectedSection.querySelector('.amount-field');
+                if (amountField) {
+                    // Initially hide amount field
+                    amountField.style.display = 'none';
+                    
+                    // Show amount field after a delay
+                    setTimeout(() => {
+                        amountField.style.display = 'block';
+                    }, 300);
+                }
+            }
+            // Show submit button
+            document.getElementById('submit-button').style.display = 'block';
+        } else {
+            // Hide submit button if no type selected
+            document.getElementById('submit-button').style.display = 'none';
+        }
+    });
+
+    // Form submission handler
+    document.getElementById('addRecordForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        submitRecord(event);
+    });
+
+    function submitRecord(event) {
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Record added successfully!');
+                window.location.reload();
+            } else {
+                alert(data.message || 'Error adding record');
+            }
+        })
+        .catch(error => {
+            console.error('Submission error:', error);
+            alert('Error submitting form: ' + error.message);
+        });
+    }
+
+    function closePanel() {
+        document.getElementById('addRecordPanel').classList.remove('open');
+    }
+
+    function calculateTotalValue() {
+        const amount = document.getElementById('id_amount').value;
+        const exchangeRate = document.getElementById('id_exchange_rate').value;
+        const currency = document.getElementById('id_currency').value;
+        
+        let totalValue = amount;
+        if (currency === 'USD' && exchangeRate) {
+            totalValue = amount * exchangeRate;
+        }
+        
+        document.getElementById('id_total_value').value = totalValue;
+    }
+
+    // Add event listeners for amount and exchange rate fields
+    document.getElementById('id_amount').addEventListener('input', calculateTotalValue);
+    document.getElementById('id_exchange_rate').addEventListener('input', calculateTotalValue);
+</script>

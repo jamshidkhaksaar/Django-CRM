@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">User Permissions - {{ user.username }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="user_type" class="form-label">User Type</label>
+                            {{ form.user_type }}
+                            {% if form.user_type.errors %}
+                                <div class="invalid-feedback d-block">{{ form.user_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="is_active">Active Account</label>
+                            </div>
+                            {% if form.is_active.errors %}
+                                <div class="invalid-feedback d-block">{{ form.is_active.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="groups" class="form-label">Groups</label>
+                            {{ form.groups }}
+                            {% if form.groups.errors %}
+                                <div class="invalid-feedback d-block">{{ form.groups.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="user_permissions" class="form-label">Specific Permissions</label>
+                            {{ form.user_permissions }}
+                            {% if form.user_permissions.errors %}
+                                <div class="invalid-feedback d-block">{{ form.user_permissions.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="text-end">
+                            <a href="{% url 'website:user_list' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Initialize select2 for multiple select fields
+    $('#id_groups, #id_user_permissions').select2({
+        theme: 'bootstrap-5',
+        width: '100%'
+    });
+});
+</script>
+{% endblock %} 

@@ -1,39 +1,201 @@
-<div class="dropdown">
-    <a class="nav-link dropdown-toggle" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown">
-        <i class="fas fa-bell"></i>
-        <span id="notification-count" class="badge bg-danger notification-badge" 
-              style="{% if not unread_notifications %}display: none;{% endif %}">
-            {{ unread_notifications|default:0 }}
+{% load static %}
+
+<div class="dropdown notification-bell">
+    <a class="nav-link dropdown-toggle position-relative" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-bell notification-icon"></i>
+        <span id="notification-count" class="notification-badge" {% if not unread_count %}style="display: none;"{% endif %}>
+            {{ unread_count }}
         </span>
     </a>
-    <div class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationDropdown">
-        <div class="dropdown-header d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">Notifications</h6>
-            {% if unread_notifications %}
-                <button class="btn btn-sm btn-link text-decoration-none" onclick="markAllAsRead()">
-                    Mark all as read
-                </button>
+    <div class="dropdown-menu dropdown-menu-end notification-dropdown p-0" aria-labelledby="notificationDropdown">
+        <div class="notification-header border-bottom p-2 d-flex justify-content-between align-items-center">
+            <h6 class="m-0">Notifications</h6>
+            {% if unread_count > 0 %}
+                <button class="btn btn-sm btn-link mark-all-read p-0">Mark all as read</button>
             {% endif %}
         </div>
         <div id="notification-list" class="notification-list">
-            {% for notification in notifications %}
-                <div class="notification-item {% if not notification.is_read %}unread{% endif %}" 
-                     data-id="{{ notification.id }}">
-                    <div class="notification-content">
-                        <p class="mb-0">{{ notification.message }}</p>
-                        <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+            {% if notifications %}
+                {% for notification in notifications %}
+                    <div class="notification-item {% if not notification.is_read %}unread{% endif %}" 
+                         data-notification-id="{{ notification.id }}">
+                        <div class="notification-content p-2">
+                            <p class="mb-1">{{ notification.message }}</p>
+                            <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                            {% if notification.record %}
+                                <a href="{% url 'website:record_detail' notification.record.id %}" class="btn btn-sm btn-link p-0">
+                                    View Record
+                                </a>
+                            {% endif %}
+                        </div>
                     </div>
+                {% endfor %}
+            {% else %}
+                <div class="p-3 text-center text-muted">
+                    <i class="fas fa-bell-slash mb-2"></i>
+                    <p class="mb-0">No notifications</p>
                 </div>
-            {% empty %}
-                <div class="text-center p-3">
-                    <p class="text-muted mb-0">No notifications</p>
-                </div>
-            {% endfor %}
-        </div>
-        <div class="dropdown-footer">
-            <a href="{% url 'notifications' %}" class="btn btn-link btn-sm text-decoration-none w-100">
-                View All Notifications
-            </a>
+            {% endif %}
         </div>
     </div>
-</div> 
+</div>
+
+<!-- Notification Sound -->
+<audio id="notificationSound" preload="auto">
+    <source src="{% static 'website/sounds/notification.mp3' %}" type="audio/mpeg">
+</audio>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize WebSocket
+    const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const notificationSocket = new WebSocket(
+        ws_scheme + '://' + window.location.host + '/ws/notifications/'
+    );
+
+    notificationSocket.onopen = function(e) {
+        console.log('WebSocket connection established');
+    };
+
+    notificationSocket.onmessage = function(e) {
+        console.log('WebSocket message received:', e.data);
+        const data = JSON.parse(e.data);
+        if (data.type === 'notification') {
+            handleNewNotification(data.notification);
+        }
+    };
+
+    notificationSocket.onerror = function(e) {
+        console.error('WebSocket error:', e);
+    };
+
+    notificationSocket.onclose = function(e) {
+        console.log('WebSocket connection closed. Reconnecting...');
+        setTimeout(() => {
+            window.location.reload();
+        }, 3000);
+    };
+
+    // Mark notification as read
+    document.querySelectorAll('.notification-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const notificationId = this.dataset.notificationId;
+            if (notificationId && this.classList.contains('unread')) {
+                markAsRead(notificationId, this);
+            }
+        });
+    });
+
+    // Mark all as read
+    document.querySelector('.mark-all-read')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        markAllAsRead();
+    });
+});
+
+function handleNewNotification(data) {
+    console.log('Handling new notification:', data);
+    
+    // Play sound
+    const sound = document.getElementById('notificationSound');
+    if (sound) {
+        sound.currentTime = 0;
+        sound.play().catch(err => console.log('Error playing sound:', err));
+    }
+
+    // Shake bell
+    const bell = document.querySelector('.notification-icon');
+    if (bell) {
+        bell.classList.add('bell-shake');
+        setTimeout(() => bell.classList.remove('bell-shake'), 1000);
+    }
+
+    // Update count
+    const badge = document.getElementById('notification-count');
+    if (badge) {
+        const currentCount = parseInt(badge.textContent || '0') + 1;
+        badge.textContent = currentCount;
+        badge.style.display = 'block';
+    }
+
+    // Add notification to list
+    const list = document.getElementById('notification-list');
+    if (list) {
+        // Remove empty state if it exists
+        const emptyState = list.querySelector('.text-center');
+        if (emptyState) {
+            emptyState.remove();
+        }
+
+        const newNotification = `
+            <div class="notification-item unread" data-notification-id="${data.notification_id}">
+                <div class="notification-content p-2">
+                    <p class="mb-1">${data.message}</p>
+                    <small class="text-muted">just now</small>
+                    ${data.record_id ? `
+                        <a href="/website/record/${data.record_id}/" class="btn btn-sm btn-link p-0">
+                            View Record
+                        </a>
+                    ` : ''}
+                </div>
+            </div>`;
+
+        // Add new notification at the top
+        list.insertAdjacentHTML('afterbegin', newNotification);
+    }
+}
+
+function markAsRead(notificationId, element) {
+    fetch(`/website/notifications/${notificationId}/read/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            element.classList.remove('unread');
+            updateNotificationCount();
+        }
+    })
+    .catch(error => console.error('Error marking notification as read:', error));
+}
+
+function markAllAsRead() {
+    fetch('/website/notifications/mark-all-read/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            document.querySelectorAll('.notification-item.unread').forEach(item => {
+                item.classList.remove('unread');
+            });
+            updateNotificationCount();
+        }
+    })
+    .catch(error => console.error('Error marking all notifications as read:', error));
+}
+
+function updateNotificationCount() {
+    const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+    const badge = document.getElementById('notification-count');
+    if (badge) {
+        badge.textContent = unreadCount;
+        badge.style.display = unreadCount > 0 ? 'block' : 'none';
+    }
+
+    // Hide mark all as read button if no unread notifications
+    const markAllBtn = document.querySelector('.mark-all-read');
+    if (markAllBtn && unreadCount === 0) {
+        markAllBtn.style.display = 'none';
+    }
+}
+</script> 

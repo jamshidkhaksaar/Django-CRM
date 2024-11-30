@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent.parent
 AUTH_USER_MODEL = 'accounts.User'
 
 AUTHENTICATION_BACKENDS = [
@@ -11,12 +14,15 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': 'django_debug.log',
+            'filename': 'debug.log',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['file', 'console'],
             'level': 'DEBUG',
             'propagate': True,
         },
@@ -35,8 +41,9 @@ MIDDLEWARE = [
     'website.middleware.NotificationMiddleware',
 ]
 
-LOGIN_REDIRECT_URL = 'home'
-LOGIN_URL = 'login'
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL_NAME = '/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -78,11 +85,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'baton.autodiscover',
     'maintenance_mode',
     'website',
     'accounts',
     'channels',
+    
 ]
 
 # Add Baton configuration
@@ -113,3 +122,12 @@ BATON = {
         },
     ),
 }
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379',
+    }
+}
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']

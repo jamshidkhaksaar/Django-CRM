@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Setup Two-Factor Authentication</h5>
+                </div>
+                <div class="card-body">
+                    {% if not is_enabled %}
+                        <p>Scan this QR code with your authenticator app:</p>
+                        <div class="text-center mb-4">
+                            <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+                        </div>
+                        
+                        <p>Or manually enter this code in your app:</p>
+                        <div class="alert alert-info text-center mb-4">
+                            {{ secret_key }}
+                        </div>
+
+                        <form method="POST">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="code" class="form-label">Verification Code</label>
+                                <input type="text" class="form-control" id="code" name="code" required>
+                                <div class="form-text">Enter the code from your authenticator app</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Enable 2FA</button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-success">
+                            Two-factor authentication is enabled for your account.
+                        </div>
+                        <form method="POST" action="{% url 'website:disable_2fa' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Disable 2FA</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

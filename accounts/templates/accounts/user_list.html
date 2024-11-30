@@ -25,6 +25,7 @@
                     <td>{{ user.username }}</td>
                     <td>{{ user.email }}</td>
                     <td>{{ user.get_user_type_display }}</td>
+                    <td>{{ user.user_type|title }}</td>
                     <td>
                         <a href="{% url 'edit_user' user.pk %}" class="btn btn-sm btn-primary">Edit</a>
                         <a href="{% url 'delete_user' user.pk %}" class="btn btn-sm btn-danger">Delete</a>

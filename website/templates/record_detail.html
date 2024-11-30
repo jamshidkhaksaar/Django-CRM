@@ -1,75 +1,102 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container mt-4">
     <div class="row">
-        <!-- Record Details Card -->
+        <!-- Record Information -->
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">Record #{{ record.id }}</h4>
-                    <div class="action-buttons">
-                        {% if user.can_edit_record %}
-                            <a href="{% url 'edit_record' record.id %}" class="btn btn-primary btn-sm">
-                                <i class="fas fa-edit"></i> Edit
-                            </a>
-                        {% endif %}
-                        {% if user.can_delete_record %}
-                            <a href="{% url 'delete_record' record.id %}" class="btn btn-danger btn-sm">
-                                <i class="fas fa-trash"></i> Delete
-                            </a>
-                        {% endif %}
-                        {% if user.can_approve_records and record.can_be_approved_by_user %}
-                            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#approvalModal">
-                                <i class="fas fa-check"></i> Review
-                            </button>
-                        {% endif %}
-                    </div>
+                    {% if can_approve %}
+                        <a href="{% url 'record_approval' record.id %}" class="btn btn-success">
+                            <i class="fas fa-check-circle"></i> Review
+                        </a>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     {% include 'includes/record_details.html' %}
-                    {% include 'includes/approval_history.html' %}
                 </div>
             </div>
         </div>
 
-        <!-- Approval History Card -->
+        <!-- Approval History -->
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header bg-info text-white">
                     <h4 class="mb-0">Approval History</h4>
                 </div>
                 <div class="card-body">
-                    {% for approval in approval_history %}
-                    <div class="approval-item mb-3">
-                        <h5>{{ approval.role }}</h5>
-                        <p><strong>Approver:</strong> {{ approval.approver.get_full_name }}</p>
-                        <p><strong>Date:</strong> {{ approval.date|date:"d/m/Y H:i" }}</p>
-                        <p><strong>Comments:</strong></p>
-                        <p class="ms-3">{{ approval.comments|default:"No comments provided" }}</p>
-                        <hr>
+                    <!-- Current Status -->
+                    <div class="current-status mb-3">
+                        <span class="badge {% if record.approval_status == 'approved' %}bg-success
+                                       {% elif record.approval_status == 'rejected' %}bg-danger
+                                       {% elif record.approval_status == 'pending_executive' %}bg-info
+                                       {% elif record.approval_status == 'pending_chief' %}bg-primary
+                                       {% else %}bg-warning{% endif %}">
+                            Current Status: {{ record.get_approval_status_display }}
+                        </span>
                     </div>
-                    {% empty %}
-                    <p>No approval history yet.</p>
-                    {% endfor %}
 
+                    <!-- Approval Form - Only show if user can approve -->
                     {% if can_approve %}
-                    <form method="post" action="{% url 'record_approval' record.id %}" class="mt-3">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label class="form-label">Your Decision</label>
-                            <select name="status" class="form-select" required>
-                                <option value="approved">Approve</option>
-                                <option value="rejected">Reject</option>
-                                <option value="pending">Keep Pending</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Comments</label>
-                            <textarea name="comments" class="form-control" rows="3" required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Submit Decision</button>
-                    </form>
+                    <div class="approval-form mb-4">
+                        <h5>Review Record</h5>
+                        <form method="post" action="{% url 'record_approval' record.id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label">Decision</label>
+                                <select name="status" class="form-select" required>
+                                    {% if user.user_type == 'chief_executive' %}
+                                        <option value="approved">Approve</option>
+                                    {% else %}
+                                        <option value="approved">Forward to Next Level</option>
+                                    {% endif %}
+                                    <option value="rejected">Reject</option>
+                                    <option value="pending">Keep Pending</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Comments & Suggestions</label>
+                                <textarea name="comments" class="form-control" rows="3" required
+                                        placeholder="Please provide your review comments"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Submit Review</button>
+                        </form>
+                    </div>
                     {% endif %}
+
+                    <!-- Approval History Timeline -->
+                    <div class="approval-timeline">
+                        <h5>Previous Reviews</h5>
+                        {% if record.get_approval_history %}
+                            {% for approval in record.get_approval_history %}
+                                <div class="approval-entry mb-4">
+                                    <div class="approval-header">
+                                        <h6>{{ approval.role }} Review</h6>
+                                        <small class="text-muted">{{ approval.date|date:"M d, Y H:i" }}</small>
+                                    </div>
+                                    <div class="approval-content">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="reviewer">By: {{ approval.user }}</span>
+                                            <span class="badge {% if approval.status == 'approved' %}bg-success
+                                                   {% elif approval.status == 'rejected' %}bg-danger
+                                                   {% else %}bg-warning{% endif %}">
+                                                {{ approval.status|title }}
+                                            </span>
+                                        </div>
+                                        <div class="comments-section">
+                                            <strong>Comments:</strong>
+                                            <p class="comments-text">{{ approval.comments|default:"No comments provided" }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Record is awaiting initial review
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>

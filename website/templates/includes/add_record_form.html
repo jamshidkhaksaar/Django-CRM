@@ -1,0 +1,571 @@
+{% load static %}
+
+<form id="recordForm" method="POST" action="{% url 'website:add_record' %}" class="needs-validation" novalidate>
+    {% csrf_token %}
+    
+    <!-- Transaction Type Selection -->
+    <div class="mb-3">
+        <label for="transaction_type" class="form-label required">Transaction Type</label>
+        <select class="form-select" id="transaction_type" name="transaction_type" required>
+            <option value="">Select Type</option>
+            <option value="balance">Balance Entry</option>
+            <option value="income">Income Record</option>
+            <option value="expense">Expense Record</option>
+            <option value="advance">Advance Record</option>
+            <option value="payable">Payable Record</option>
+        </select>
+        <div class="invalid-feedback">Please select a transaction type.</div>
+    </div>
+
+    <!-- Common Fields for Amount and Date -->
+    <div id="common-fields" style="display: none;">
+        <div class="mb-3">
+            <label for="amount" class="form-label required">Amount</label>
+            <div class="input-group">
+                <input type="number" class="form-control" id="amount" name="amount" step="0.01" required>
+                <span class="input-group-text">AFN</span>
+            </div>
+            <div class="invalid-feedback">Please enter a valid amount.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="date" class="form-label required">Date</label>
+            <input type="date" class="form-control" id="date" name="date" required>
+            <div class="invalid-feedback">Please select a date.</div>
+        </div>
+    </div>
+
+    <!-- Balance Fields -->
+    <div id="balance-fields" class="transaction-fields" style="display: none;">
+        <div class="mb-3">
+            <label for="balance_type" class="form-label required">Balance Type</label>
+            <select class="form-select" id="balance_type" name="balance_type" required>
+                <option value="">Select Type</option>
+                <option value="opening">Opening Balance</option>
+                <option value="closing">Closing Balance</option>
+                <option value="adjustment">Balance Adjustment</option>
+                <option value="reconciliation">Bank Reconciliation</option>
+            </select>
+            <div class="invalid-feedback">Please select a balance type.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="balance_description" class="form-label required">Comment/Description</label>
+            <textarea class="form-control" id="balance_description" name="description" rows="3" required></textarea>
+            <div class="invalid-feedback">Please enter a description.</div>
+        </div>
+    </div>
+
+    <!-- Income Fields -->
+    <div id="income-fields" class="transaction-fields" style="display: none;">
+        <div class="mb-3">
+            <label for="income_source" class="form-label required">Income Source</label>
+            <select class="form-select" id="income_source" name="income_source" required>
+                <option value="">Select Source</option>
+                <option value="salary">Salary</option>
+                <option value="investment">Investment</option>
+                <option value="donation">Donation</option>
+                <option value="grant">Grant</option>
+                <option value="sales">Sales</option>
+                <option value="service">Service Fee</option>
+                <option value="other">Other</option>
+            </select>
+            <div class="invalid-feedback">Please select an income source.</div>
+        </div>
+
+        <!-- Other Income Source Field (shown only when 'Other' is selected) -->
+        <div class="mb-3" id="other_income_source_field" style="display: none;">
+            <label for="other_income_source" class="form-label required">Specify Other Source</label>
+            <input type="text" class="form-control" id="other_income_source" name="other_income_source">
+            <div class="invalid-feedback">Please specify the other income source.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="income_category" class="form-label required">Income Category</label>
+            <select class="form-select" id="income_category" name="income_category" required>
+                <option value="">Select Category</option>
+                <option value="regular">Regular Income</option>
+                <option value="one-time">One-time Income</option>
+                <option value="recurring">Recurring Income</option>
+            </select>
+            <div class="invalid-feedback">Please select an income category.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="income_payment_method" class="form-label required">Payment Method</label>
+            <select class="form-select" id="income_payment_method" name="payment_method" required>
+                <option value="">Select Method</option>
+                <option value="cash">Cash</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="check">Check</option>
+                <option value="online">Online Payment</option>
+            </select>
+            <div class="invalid-feedback">Please select a payment method.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="income_description" class="form-label required">Comment/Description</label>
+            <textarea class="form-control" id="income_description" name="description" rows="3" required></textarea>
+            <div class="invalid-feedback">Please enter a description.</div>
+        </div>
+    </div>
+
+    <!-- Expense Fields -->
+    <div id="expense-fields" class="transaction-fields" style="display: none;">
+        <div class="mb-3">
+            <label for="expense_category" class="form-label required">Expense Category</label>
+            <select class="form-select" id="expense_category" name="expense_category" required>
+                <option value="">Select Category</option>
+                <option value="utilities">Utilities</option>
+                <option value="supplies">Office Supplies</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="salary">Salary Payments</option>
+                <option value="rent">Rent</option>
+                <option value="equipment">Equipment</option>
+                <option value="transportation">Transportation</option>
+                <option value="other">Other</option>
+            </select>
+            <div class="invalid-feedback">Please select an expense category.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="expense_type" class="form-label required">Expense Type</label>
+            <select class="form-select" id="expense_type" name="expense_type" required>
+                <option value="">Select Type</option>
+                <option value="operational">Operational</option>
+                <option value="administrative">Administrative</option>
+                <option value="project">Project-based</option>
+                <option value="emergency">Emergency</option>
+            </select>
+            <div class="invalid-feedback">Please select an expense type.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="vendor" class="form-label required">Vendor</label>
+            <input type="text" class="form-control" id="vendor" name="vendor" required>
+            <div class="invalid-feedback">Please enter vendor name.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="receipt_number" class="form-label">Receipt Number</label>
+            <input type="text" class="form-control" id="receipt_number" name="receipt_number">
+        </div>
+
+        <div class="mb-3">
+            <label for="expense_payment_method" class="form-label required">Payment Method</label>
+            <select class="form-select" id="expense_payment_method" name="payment_method" required>
+                <option value="">Select Method</option>
+                <option value="cash">Cash</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="check">Check</option>
+                <option value="online">Online Payment</option>
+            </select>
+            <div class="invalid-feedback">Please select a payment method.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="expense_description" class="form-label required">Comment/Description</label>
+            <textarea class="form-control" id="expense_description" name="description" rows="3" required></textarea>
+            <div class="invalid-feedback">Please enter a description.</div>
+        </div>
+    </div>
+
+    <!-- Advance Fields -->
+    <div id="advance-fields" class="transaction-fields" style="display: none;">
+        <div class="mb-3">
+            <label for="recipient_name" class="form-label required">Recipient Name</label>
+            <input type="text" class="form-control" id="recipient_name" name="recipient_name" required>
+            <div class="invalid-feedback">Please enter recipient name.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="recipient_position" class="form-label required">Position/Department</label>
+            <input type="text" class="form-control" id="recipient_position" name="recipient_position" required>
+            <div class="invalid-feedback">Please enter recipient's position.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="repayment_deadline" class="form-label required">Repayment Deadline</label>
+            <input type="date" class="form-control" id="repayment_deadline" name="repayment_deadline" required>
+            <div class="invalid-feedback">Please select a repayment deadline.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="repayment_method" class="form-label required">Repayment Method</label>
+            <select class="form-select" id="repayment_method" name="repayment_method" required>
+                <option value="">Select Method</option>
+                <option value="salary_deduction">Salary Deduction</option>
+                <option value="direct_payment">Direct Payment</option>
+                <option value="installments">Installments</option>
+            </select>
+            <div class="invalid-feedback">Please select a repayment method.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="advance_payment_method" class="form-label required">Payment Method</label>
+            <select class="form-select" id="advance_payment_method" name="payment_method" required>
+                <option value="">Select Method</option>
+                <option value="cash">Cash</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="check">Check</option>
+                <option value="online">Online Payment</option>
+            </select>
+            <div class="invalid-feedback">Please select a payment method.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="advance_description" class="form-label required">Comment/Description</label>
+            <textarea class="form-control" id="advance_description" name="description" rows="3" required></textarea>
+            <div class="invalid-feedback">Please enter a description.</div>
+        </div>
+    </div>
+
+    <!-- Payable Fields -->
+    <div id="payable-fields" class="transaction-fields" style="display: none;">
+        <div class="mb-3">
+            <label for="lender_name" class="form-label required">Lender Name</label>
+            <input type="text" class="form-control" id="lender_name" name="lender_name" required>
+            <div class="invalid-feedback">Please enter lender name.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="lender_contact" class="form-label required">Lender Contact</label>
+            <input type="text" class="form-control" id="lender_contact" name="lender_contact" required>
+            <div class="invalid-feedback">Please enter lender contact.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="due_date" class="form-label required">Due Date</label>
+            <input type="date" class="form-control" id="due_date" name="due_date" required>
+            <div class="invalid-feedback">Please select a due date.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="payable_payment_method" class="form-label required">Payment Method</label>
+            <select class="form-select" id="payable_payment_method" name="payment_method" required>
+                <option value="">Select Method</option>
+                <option value="cash">Cash</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="check">Check</option>
+                <option value="online">Online Payment</option>
+            </select>
+            <div class="invalid-feedback">Please select a payment method.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="payable_description" class="form-label required">Comment/Description</label>
+            <textarea class="form-control" id="payable_description" name="description" rows="3" required></textarea>
+            <div class="invalid-feedback">Please enter a description.</div>
+        </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-save me-2"></i>Save Record
+        </button>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const transactionTypeSelect = document.getElementById('transaction_type');
+    const commonFields = document.getElementById('common-fields');
+    const incomeSourceSelect = document.getElementById('income_source');
+    const otherIncomeSourceField = document.getElementById('other_income_source_field');
+    const form = document.getElementById('recordForm');
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    const progressBar = document.querySelector('.form-progress-bar');
+    
+    // Function to hide all transaction fields
+    function hideAllTransactionFields() {
+        document.querySelectorAll('.transaction-fields').forEach(field => {
+            field.style.display = 'none';
+            // Disable all required fields in hidden sections
+            field.querySelectorAll('[required]').forEach(input => {
+                input.required = false;
+            });
+        });
+    }
+
+    // Function to show fields for selected transaction type
+    function showTransactionFields(type) {
+        hideAllTransactionFields();
+        if (type) {
+            commonFields.style.display = 'block';
+            const selectedFields = document.getElementById(`${type}-fields`);
+            if (selectedFields) {
+                selectedFields.style.display = 'block';
+                // Re-enable required fields in visible section
+                selectedFields.querySelectorAll('[required]').forEach(input => {
+                    input.required = true;
+                });
+            }
+        } else {
+            commonFields.style.display = 'none';
+        }
+        updateProgress();
+    }
+
+    // Handle transaction type change
+    transactionTypeSelect.addEventListener('change', function() {
+        showTransactionFields(this.value);
+    });
+
+    // Handle income source change for "Other" option
+    if (incomeSourceSelect) {
+        incomeSourceSelect.addEventListener('change', function() {
+            otherIncomeSourceField.style.display = this.value === 'other' ? 'block' : 'none';
+            const otherInput = document.getElementById('other_income_source');
+            otherInput.required = this.value === 'other';
+            updateProgress();
+        });
+    }
+
+    // Function to update progress bar
+    function updateProgress() {
+        const requiredFields = form.querySelectorAll('[required]');
+        const filledFields = Array.from(requiredFields).filter(field => field.value.trim() !== '');
+        const progress = (filledFields.length / requiredFields.length) * 100;
+        progressBar.style.width = `${progress}%`;
+    }
+
+    // Add input event listeners to all form fields
+    form.querySelectorAll('input, select, textarea').forEach(field => {
+        field.addEventListener('input', updateProgress);
+    });
+
+    // Form submission handler
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        console.log('Form submission started');
+
+        // Validate form before submission
+        if (!form.checkValidity()) {
+            console.log('Form validation failed');
+            event.stopPropagation();
+            form.classList.add('was-validated');
+            return;
+        }
+
+        // Show loading overlay
+        loadingOverlay.classList.add('show');
+
+        try {
+            // Get the CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            // Create FormData object
+            const formData = new FormData();
+            
+            // Add CSRF token
+            formData.append('csrfmiddlewaretoken', csrfToken);
+            
+            // Add common fields
+            const transactionType = form.querySelector('[name="transaction_type"]').value;
+            formData.append('transaction_type', transactionType);
+            formData.append('amount', form.querySelector('[name="amount"]').value);
+            formData.append('date', form.querySelector('[name="date"]').value);
+            
+            // Get the active description field based on transaction type
+            const descriptionField = form.querySelector(`#${transactionType}_description`);
+            if (descriptionField && descriptionField.value) {
+                formData.append('description', descriptionField.value);
+            }
+
+            // Add type-specific fields based on transaction type
+            const transactionFields = document.getElementById(`${transactionType}-fields`);
+            if (transactionFields) {
+                const fields = transactionFields.querySelectorAll('input, select, textarea');
+                fields.forEach(field => {
+                    if (field.name && field.value && field.name !== 'description') {
+                        formData.append(field.name, field.value);
+                    }
+                });
+            }
+
+            // Log form data for debugging
+            const formDataObj = {};
+            formData.forEach((value, key) => {
+                formDataObj[key] = value;
+            });
+            console.log('Form data:', formDataObj);
+
+            // Send AJAX request
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            });
+
+            const data = await response.json();
+            console.log('Server response:', data);
+
+            // Hide loading overlay
+            loadingOverlay.classList.remove('show');
+
+            if (data.status === 'success') {
+                // Show success message
+                showToast(data.message, 'success');
+
+                // Reset form
+                form.reset();
+                form.classList.remove('was-validated');
+                progressBar.style.width = '0%';
+                hideAllTransactionFields();
+
+                // Close the sliding menu after a short delay
+                setTimeout(() => {
+                    const slideMenu = document.getElementById('addRecordSlideMenu');
+                    const bsInstance = bootstrap.Offcanvas.getInstance(slideMenu);
+                    if (bsInstance) {
+                        bsInstance.hide();
+                    }
+
+                    // Redirect if URL provided
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    }
+                }, 1500);
+            } else {
+                // Show error message
+                showToast(data.message, 'error');
+                
+                // Focus on the first invalid field
+                const firstInvalidField = form.querySelector(':invalid');
+                if (firstInvalidField) {
+                    firstInvalidField.focus();
+                }
+            }
+        } catch (error) {
+            console.error('Error during form submission:', error);
+            loadingOverlay.classList.remove('show');
+            showToast('An error occurred while saving the record.', 'error');
+        }
+    });
+
+    // Helper function to get field names from error message
+    function getErrorFields(message) {
+        const fields = [];
+        const fieldMatches = message.match(/\((.*?)\)/);
+        if (fieldMatches && fieldMatches[1]) {
+            fields.push(...fieldMatches[1].split(', ').map(f => f.toLowerCase()));
+        }
+        return fields;
+    }
+
+    // Helper function to highlight error fields
+    function highlightErrorFields(fields) {
+        // Reset all fields
+        form.querySelectorAll('.form-control, .form-select').forEach(field => {
+            field.classList.remove('is-invalid');
+        });
+
+        // Highlight error fields
+        fields.forEach(fieldName => {
+            const field = form.querySelector(`[name="${fieldName}"]`);
+            if (field) {
+                field.classList.add('is-invalid');
+                field.focus();
+            }
+        });
+    }
+
+    // Initialize fields based on current selection
+    showTransactionFields(transactionTypeSelect.value);
+});
+
+// Toast notification function
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `modern-toast ${type}`;
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+            <div class="toast-message">${message}</div>
+        </div>
+    `;
+    
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    toastContainer.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+</script>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
+<style>
+/* Toast Styles */
+.toast-container {
+    z-index: 1060;
+}
+
+.modern-toast {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    min-width: 300px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.modern-toast.success {
+    border-left: 4px solid #198754;
+}
+
+.modern-toast.error {
+    border-left: 4px solid #dc3545;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 1050;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-overlay.show {
+    display: flex;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style> 

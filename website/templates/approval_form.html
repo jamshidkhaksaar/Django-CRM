@@ -3,52 +3,40 @@
 <div class="container mt-4">
     <div class="card">
         <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">{{ approval_title }} - Record #{{ record.pk }}</h4>
+            <h4 class="mb-0">Review Record #{{ record.pk }}</h4>
         </div>
         <div class="card-body">
             <!-- Record Details -->
             {% include 'includes/record_details.html' %}
 
             <!-- Previous Approvals -->
-            {% if previous_approvals %}
-            <div class="mb-4">
-                <h5>Approval History</h5>
-                {% for approval in previous_approvals %}
-                <div class="approval-item mb-3">
-                    <h6>{{ approval.role }}</h6>
-                    <p><strong>Status:</strong> <span class="badge bg-{{ approval.status|status_badge }}">{{ approval.status }}</span></p>
-                    <p><strong>Comments:</strong> {{ approval.comments|default:"No comments provided" }}</p>
-                    <small class="text-muted">{{ approval.date|date:"F d, Y H:i" }}</small>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
+            {% include 'includes/approval_history.html' %}
 
             <!-- Approval Form -->
             {% if can_approve %}
             <form method="post" class="mt-4">
                 {% csrf_token %}
                 <div class="mb-3">
-                    <label class="form-label">Decision</label>
+                    <label class="form-label">Your Decision</label>
                     <select name="status" class="form-select" required>
                         {% if user.user_type == 'chief_executive' %}
-                            <option value="approve">Final Approval</option>
+                            <option value="approved">Approve</option>
                         {% else %}
-                            <option value="approve">Forward to Next Level</option>
+                            <option value="approved">Forward to Next Level</option>
                         {% endif %}
-                        <option value="reject">Reject</option>
+                        <option value="rejected">Reject</option>
                         <option value="pending">Keep Pending</option>
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Comments</label>
-                    <textarea name="comments" class="form-control" rows="3" required></textarea>
+                    <label class="form-label">Your Comments</label>
+                    <textarea name="comments" class="form-control" rows="3" required 
+                              placeholder="Please provide your comments/feedback"></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary">Submit Decision</button>
+                <button type="submit" class="btn btn-primary">Submit Review</button>
             </form>
             {% endif %}
         </div>
     </div>
 </div>
-{% endblock %} 
 {% endblock %} 

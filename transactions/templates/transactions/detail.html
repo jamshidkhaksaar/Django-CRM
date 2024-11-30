@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3>Transaction Details</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-sm-3">
+                    <strong>Amount:</strong>
+                </div>
+                <div class="col-sm-9">
+                    ${{ transaction.amount }}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-sm-3">
+                    <strong>Description:</strong>
+                </div>
+                <div class="col-sm-9">
+                    {{ transaction.description }}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-sm-3">
+                    <strong>Status:</strong>
+                </div>
+                <div class="col-sm-9">
+                    <span class="badge {% if transaction.status == 'approved' %}bg-success{% elif transaction.status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %}">
+                        {{ transaction.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-sm-3">
+                    <strong>Created By:</strong>
+                </div>
+                <div class="col-sm-9">
+                    {{ transaction.created_by.get_full_name|default:transaction.created_by.username }}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-sm-3">
+                    <strong>Created At:</strong>
+                </div>
+                <div class="col-sm-9">
+                    {{ transaction.created_at|date:"F j, Y, g:i a" }}
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'transactions:list' %}" class="btn btn-secondary">Back to List</a>
+            {% if can_approve %}
+                <a href="{% url 'transactions:approve' transaction.pk %}" class="btn btn-success">Approve</a>
+                <a href="{% url 'transactions:reject' transaction.pk %}" class="btn btn-danger">Reject</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

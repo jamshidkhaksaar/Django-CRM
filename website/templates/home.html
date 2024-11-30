@@ -1,1047 +1,284 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load form_tags %}
 
 {% block head %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.bootstrap5.min.css">
 <style>
-    body {
-        background-image: url("{% static 'website/images/Background.png' %}");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-    }
-
-    .table-responsive {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .table th, .table td {
-        text-align: center;
-        vertical-align: middle;
-    }
-
-    /* Fixed widths for specific columns */
-    .table th:nth-child(1), .table td:nth-child(1) { width: 50px; }  /* No */
-    .table th:nth-child(2), .table td:nth-child(2) { width: 120px; } /* Transaction Type */
-    .table th:nth-child(3), .table td:nth-child(3) { width: 150px; } /* Item Name */
-    .table th:nth-child(4), .table td:nth-child(4) { width: 100px; } /* Item Type */
-    .table th:nth-child(5), .table td:nth-child(5) { width: 200px; } /* Description */
-    .table th:nth-child(6), .table td:nth-child(6) { width: 120px; } /* Project */
-    .table th:nth-child(7), .table td:nth-child(7) { width: 100px; } /* Location */
-    .table th:nth-child(8), .table td:nth-child(8) { width: 120px; } /* Requester */
-    .table th:nth-child(9), .table td:nth-child(9) { width: 100px; } /* Unit Measure */
-    .table th:nth-child(10), .table td:nth-child(10) { width: 80px; } /* Quantity */
-    .table th:nth-child(11), .table td:nth-child(11) { width: 100px; } /* Unit Price */
-    .table th:nth-child(12), .table td:nth-child(12) { width: 100px; } /* Total Value */
-    .table th:nth-child(13), .table td:nth-child(13) { width: 100px; } /* Date */
-    .table th:nth-child(14), .table td:nth-child(14) { width: 120px; } /* Reviewer */
-    .table th:nth-child(15), .table td:nth-child(15) { width: 100px; } /* Result */
-    .table th:nth-child(16), .table td:nth-child(16) { width: 100px; } /* Approval */
-    .table th:nth-child(17), .table td:nth-child(17) { width: 100px; } /* Cashier Status */
-    .table th:nth-child(18), .table td:nth-child(18) { width: 150px; } /* Comments */
-
-    /* Table cell content handling */
-    .table td {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 200px; /* Adjust as needed */
-    }
-
-    /* Add hover effect to see full content */
-    .table td:hover {
-        white-space: normal;
-        overflow: visible;
+    .nav-tabs .nav-link {
+        color: #495057;
         background-color: #f8f9fa;
-        position: relative;
-        z-index: 1;
-    }
-
-    /* Responsive breakpoints */
-    @media (max-width: 1400px) {
-        .table td {
-            max-width: 150px;
-        }
-    }
-
-    @media (max-width: 992px) {
-        .table td {
-            max-width: 120px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .table td {
-            max-width: 100px;
-        }
-    }
-
-    /* Optional: Add horizontal scroll indicator */
-    .scroll-indicator {
-        display: none;
-        text-align: center;
-        padding: 10px;
-        color: #666;
-        font-size: 0.9rem;
-    }
-
-    @media (max-width: 1200px) {
-        .scroll-indicator {
-            display: block;
-        }
-    }
-
-    .animated-text {
-        font-size: 2.5rem;
-        color: #ffffff;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        opacity: 0;
-        position: relative;
-    }
-
-    /* Sliding Panel Styles */
-    .sliding-panel {
-        position: fixed;
-        top: 0;
-        right: -100%;
-        width: 100%;
-        max-width: 500px;
-        height: 100%;
-        background-color: white;
-        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-        transition: right 0.3s ease-in-out;
-        z-index: 1050;
-        overflow-y: auto;
-        padding: 20px;
-    }
-
-    .sliding-panel.open {
-        right: 0;
-    }
-
-    .panel-content {
-        padding: 20px;
-    }
-
-    .close-btn {
-        position: absolute;
-        top: 10px;
-        right: 15px;
-        font-size: 24px;
-        cursor: pointer;
-        color: #666;
-    }
-
-    .close-btn:hover {
-        color: #333;
-    }
-
-    /* Form Styles */
-    .sliding-panel form {
-        margin-top: 20px;
-    }
-
-    .sliding-panel .form-control {
-        margin-bottom: 15px;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 576px) {
-        .sliding-panel {
-            max-width: 100%;
-        }
-    }
-
-    /* Form Styles */
-    .form-control, select {
-        border: 1px solid #ddd;
-        padding: 10px;
-        border-radius: 5px;
-        transition: border-color 0.3s, box-shadow 0.3s;
-        width: 100%;
-        background-color: white;
-    }
-
-    .form-control:focus, select:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-        outline: none;
-    }
-
-    select {
-        appearance: auto;
-        -webkit-appearance: auto;
-        -moz-appearance: auto;
-        height: 42px;
-    }
-
-    select option {
-        padding: 10px;
-    }
-
-    .form-label {
-        font-weight: 500;
-        color: #555;
-        margin-bottom: 5px;
-    }
-
-    .form-text {
-        color: #6c757d;
-        font-size: 0.875rem;
-        margin-top: 5px;
-    }
-
-    /* Error Styles */
-    .is-invalid {
-        border-color: #dc3545;
-    }
-
-    .invalid-feedback {
-        color: #dc3545;
-        font-size: 0.875rem;
-        margin-top: 5px;
-    }
-
-    /* Button Styles */
-    .btn-primary {
-        background-color: #007bff;
-        border: none;
-        padding: 12px;
-        transition: background-color 0.3s;
-    }
-
-    .btn-primary:hover {
-        background-color: #0056b3;
-    }
-
-    .btn-secondary {
-        background-color: #6c757d;
-        border: none;
-        padding: 12px;
-    }
-
-    .btn-secondary:hover {
-        background-color: #545b62;
-    }
-
-    /* Scrollbar Styles */
-    .panel-content::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .panel-content::-webkit-scrollbar-track {
-        background: #f1f1f1;
-    }
-
-    .panel-content::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 4px;
-    }
-
-    .panel-content::-webkit-scrollbar-thumb:hover {
-        background: #555;
-    }
-
-    /* Date Picker Styles */
-    input[type="date"] {
-        position: relative;
-        padding: 10px;
-        color: #333;
-        font-size: 16px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        background-color: white;
-        cursor: pointer;
-    }
-
-    input[type="date"]::-webkit-calendar-picker-indicator {
-        position: absolute;
-        right: 10px;
-        padding: 5px;
-        cursor: pointer;
-        opacity: 0.6;
-        filter: invert(0.8);
-    }
-
-    input[type="date"]::-webkit-calendar-picker-indicator:hover {
-        opacity: 1;
-    }
-
-    /* Hover effect */
-    input[type="date"]:hover {
-        border-color: #007bff;
-    }
-
-    /* Focus effect */
-    input[type="date"]:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-        outline: none;
-    }
-
-    /* Search Form Styles */
-    .search-form {
-        margin-bottom: 20px;
-    }
-
-    .search-form .input-group {
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border-radius: 5px;
-        overflow: hidden;
-    }
-
-    .search-form .form-control,
-    .search-form .form-select {
-        border: 1px solid #ddd;
-        padding: 10px 15px;
-        height: 45px;
-    }
-
-    .search-form .form-control:focus,
-    .search-form .form-select:focus {
-        border-color: #007bff;
-        box-shadow: none;
-    }
-
-    .search-form .btn {
-        padding: 10px 20px;
-        height: 45px;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-
-    .search-form .btn i {
-        font-size: 14px;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .search-form .input-group {
-            flex-wrap: wrap;
-        }
-        
-        .search-form .form-control,
-        .search-form .form-select,
-        .search-form .btn {
-            width: 100%;
-            margin: 5px 0;
-            border-radius: 5px !important;
-        }
-    }
-
-    /* Column Filter Styles */
-    .filters th {
-        padding: 5px;
-        background-color: #f8f9fa;
-    }
-
-    .column-filter {
-        width: 100%;
-        padding: 6px;
-        border-radius: 4px;
-        border: 1px solid #ddd;
-    }
-
-    .column-filter:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    }
-
-    /* Make dropdowns more compact */
-    .filters select.form-select {
-        padding: 0.25rem 2rem 0.25rem 0.5rem;
-        height: auto;
-    }
-
-    /* Style for active filters */
-    .column-filter option:checked {
-        background-color: #007bff;
-        color: white;
-    }
-
-    /* Add these styles to your existing CSS */
-    .table th:first-child,
-    .table td:first-child {
-        width: 50px;
-        min-width: 50px;
-        background-color: #f8f9fa;
-        position: sticky;
-        left: 0;
-        z-index: 1;
-    }
-
-    .table th:first-child {
-        z-index: 2;  /* Higher z-index to stay above other headers */
-    }
-
-    /* Optional: Add border to make it stand out */
-    .table th:first-child,
-    .table td:first-child {
-        border-right: 2px solid #dee2e6;
-    }
-
-    /* Optional: Add hover effect */
-    .table tr:hover td:first-child {
-        background-color: #e9ecef;
-    }
-
-    /* Add Record Button Style */
-    .custom-btn {
-        background: linear-gradient(45deg, #007bff, #0056b3);
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 5px;
-        transition: all 0.3s ease;
-        margin: 0 10px;
-    }
-
-    .custom-btn:hover {
-        background: linear-gradient(45deg, #0056b3, #004085);
-        transform: translateY(-2px);
-        color: white;
-        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
-    }
-
-    /* Add this at the end of your style section */
-    @media (max-width: 991px) {
-        .custom-btn {
-            margin: 10px 0;
-            width: 100%;
-        }
-    }
-
-    /* Add styles for the clear filters button */
-    #clearColumnFilters {
-        background: linear-gradient(45deg, #28a745, #20c997);
-        border: none;
-        color: white;
-        padding: 8px 16px;
-        transition: all 0.3s ease;
-    }
-
-    #clearColumnFilters:hover {
-        background: linear-gradient(45deg, #20c997, #28a745);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-    }
-
-    #clearColumnFilters i {
+        border: 1px solid #dee2e6;
         margin-right: 5px;
     }
-
-    /* Add animation for the button */
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+    .nav-tabs .nav-link.active {
+        color: #007bff;
+        background-color: #fff;
+        border-bottom-color: transparent;
     }
-
-    .fade-in {
-        animation: fadeIn 0.3s ease-in;
-    }
-
-    /* Widget Styles */
-    .widgets-container {
-        position: sticky;
-        top: 20px;
-        padding-right: 15px;
-    }
-
-    .widget {
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        background: white;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .widget:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .widget-content {
-        text-align: center;
-        position: relative;
-        padding-top: 15px;
-    }
-
-    .widget-icon {
-        font-size: 2rem;
-        margin-bottom: 15px;
-        display: block;
-    }
-
-    .widget h5 {
-        margin-bottom: 10px;
-        font-weight: 500;
-        font-size: 1.1rem;
-    }
-
-    .widget h3 {
-        margin: 0;
-        font-weight: 600;
-        font-size: 1.8rem;
-        color: white !important;
-    }
-
-    /* Specific widget styles */
-    .balance-widget {
-        background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-        color: white;
-    }
-
-    .income-widget {
-        background: linear-gradient(135deg, #28a745 0%, #218838 100%);
-        color: white;
-    }
-
-    .expense-widget {
-        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-        color: white;
-    }
-
-    .advance-widget {
-        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-        color: white;
-    }
-
-    /* Table Enhancements */
-    .table {
-        font-size: 0.9rem;
-    }
-    
-    .table thead th {
+    .table th {
         background-color: #f8f9fa;
-        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+    }
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .status-badge i {
+        font-size: 0.9em;
+    }
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+    }
+    .status-approved {
+        background-color: #d1e7dd;
+        color: #0f5132;
+        border: 1px solid #badbcc;
+    }
+    .status-rejected {
+        background-color: #f8d7da;
+        color: #842029;
+        border: 1px solid #f5c2c7;
+    }
+    .status-pending_deputy {
+        background-color: #cfe2ff;
+        color: #084298;
+        border: 1px solid #b6d4fe;
+    }
+    .status-pending_executive {
+        background-color: #e2e3e5;
+        color: #41464b;
+        border: 1px solid #d3d6d8;
+    }
+    .status-pending_ceo {
+        background-color: #d3d3d3;
+        color: #1a1e21;
+        border: 1px solid #c6c8ca;
+    }
+    .action-buttons .btn {
+        padding: 2px 8px;
+        font-size: 0.85em;
+    }
+    .tab-pane {
+        padding: 20px;
+        border: 1px solid #dee2e6;
+        border-top: none;
+    }
+    .amount-cell {
+        font-family: monospace;
+        text-align: right;
+    }
+    .date-cell {
         white-space: nowrap;
     }
-    
-    .table tbody tr:hover {
-        background-color: rgba(0,0,0,.02);
+    .balance-card {
+        border-left: 4px solid;
+        transition: transform 0.2s;
     }
-    
-    .badge {
-        font-weight: 500;
-        padding: 0.5em 0.8em;
+    .balance-card:hover {
+        transform: translateY(-2px);
     }
-    
-    .btn-group .btn {
-        padding: 0.25rem 0.5rem;
+    .balance-card.total { border-color: #0d6efd; }
+    .balance-card.income { border-color: #198754; }
+    .balance-card.expense { border-color: #dc3545; }
+    .balance-card.advance { border-color: #ffc107; }
+    .balance-card.payable { border-color: #17a2b8; }
+    .balance-amount {
+        font-size: 1.5rem;
+        font-weight: bold;
+        font-family: monospace;
     }
-    
-    .btn-group .btn i {
-        font-size: 0.875rem;
-    }
-    
-    /* Custom Badge Colors */
-    .bg-income-subtle {
-        background-color: rgba(25, 135, 84, 0.1);
-        color: #198754;
-    }
-    
-    .bg-expense-subtle {
-        background-color: rgba(220, 53, 69, 0.1);
-        color: #dc3545;
-    }
-    
-    .bg-advance-subtle {
-        background-color: rgba(13, 110, 253, 0.1);
-        color: #0d6efd;
-    }
-    
-    /* Search Input Enhancement */
-    .input-group {
-        width: 300px;
-    }
-    
-    .input-group .form-control:focus {
-        border-color: #86b7fe;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-    }
-
-    /* Widget Container Alignment */
-    .widgets-container {
-        height: calc(100vh - 100px);
+    .installment-list {
+        max-height: 200px;
         overflow-y: auto;
-    }
-    
-    .widget {
-        margin-bottom: 20px;
-    }
-    
-    /* Card Header Enhancement */
-    .card-header {
-        border-bottom: 1px solid rgba(0,0,0,.125);
-    }
-    
-    /* Search Input Styling */
-    .search-row {
-        flex: 0 0 auto;
-    }
-    
-    .search-form .input-group {
-        width: 300px;
-    }
-    
-    /* Responsive Adjustments */
-    @media (max-width: 768px) {
-        .widgets-container {
-            height: auto;
-            margin-top: 20px;
-        }
-        
-        .search-form .input-group {
-            width: 100%;
-        }
-    }
-
-    /* Stat Cards */
-    .stat-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: all 0.3s ease;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-
-    .stat-card__content {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .stat-card__icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-    }
-
-    .stat-card__info {
-        flex: 1;
-    }
-
-    .stat-card__title {
-        color: #6c757d;
-        font-size: 0.875rem;
-        margin: 0;
-        font-weight: 500;
-    }
-
-    .stat-card__value {
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin: 0.25rem 0 0;
-    }
-
-    /* Card Variants */
-    .stat-card.balance .stat-card__icon {
-        background: rgba(13, 110, 253, 0.1);
-        color: #0d6efd;
-    }
-
-    .stat-card.income .stat-card__icon {
-        background: rgba(25, 135, 84, 0.1);
-        color: #198754;
-    }
-
-    .stat-card.expense .stat-card__icon {
-        background: rgba(220, 53, 69, 0.1);
-        color: #dc3545;
-    }
-
-    .stat-card.advance .stat-card__icon {
-        background: rgba(102, 16, 242, 0.1);
-        color: #6610f2;
-    }
-
-    /* Value Colors */
-    .stat-card.balance .stat-card__value { color: #0d6efd; }
-    .stat-card.income .stat-card__value { color: #198754; }
-    .stat-card.expense .stat-card__value { color: #dc3545; }
-    .stat-card.advance .stat-card__value { color: #6610f2; }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .stat-card {
-            margin-bottom: 0.75rem;
-        }
-        
-        .stat-card__icon {
-            width: 40px;
-            height: 40px;
-            font-size: 1rem;
-        }
-        
-        .stat-card__value {
-            font-size: 1.125rem;
-        }
-    }
-
-    .filter-section {
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-top: 1rem;
-    }
-    
-    .filter-section .form-select,
-    .filter-section .form-control {
-        border-radius: 6px;
-        font-size: 0.9rem;
-    }
-    
-    .filter-section .input-group-text {
-        background-color: white;
-        border-right: none;
-    }
-    
-    .filter-section .form-control:focus {
-        border-color: #86b7fe;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-    }
-    
-    #toggleFilters {
-        transition: all 0.3s ease;
-    }
-    
-    #toggleFilters:hover {
-        background-color: #0d6efd;
-        color: white;
-    }
-
-    /* Quick Search Styling */
-    .quick-search .input-group {
-        width: 300px;
-    }
-    
-    .quick-search .form-control {
-        border-right: none;
-    }
-    
-    .quick-search .btn {
-        border-left: none;
-    }
-    
-    .quick-search .form-control:focus {
-        border-color: #198754;
-        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
-    }
-    
-    .quick-search .form-control:focus + .btn {
-        border-color: #198754;
-        color: #198754;
-    }
-    
-    /* Filter Button Hover State */
-    .btn-outline-success:hover {
-        background-color: #198754;
-        color: white;
-    }
-    
-    /* Filter Section Submit Button */
-    .filter-section .btn-primary {
-        background-color: #198754;
-        border-color: #198754;
-    }
-    
-    .filter-section .btn-primary:hover {
-        background-color: #157347;
-        border-color: #157347;
-    }
-
-    /* Enhanced Search Styling */
-    .search-container {
-        position: relative;
-        width: 350px;
-    }
-
-    .search-wrapper {
-        position: relative;
-        width: 100%;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-    }
-
-    .search-wrapper:hover,
-    .search-wrapper:focus-within {
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    .search-icon {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #198754;
-        font-size: 16px;
-    }
-
-    .search-input {
-        width: 100%;
-        padding: 12px 40px 12px 40px;
-        border: 2px solid transparent;
-        border-radius: 8px;
-        font-size: 0.95rem;
-        transition: all 0.3s ease;
-    }
-
-    .search-input:focus {
-        outline: none;
-        border-color: #198754;
-    }
-
-    .search-clear {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        color: #6c757d;
-        cursor: pointer;
-        padding: 0;
-        font-size: 14px;
-        display: none;
-    }
-
-    .search-clear:hover {
-        color: #dc3545;
-    }
-
-    .search-input:not(:placeholder-shown) + .search-clear {
-        display: block;
-    }
-
-    /* Filter Button Enhancement */
-    .btn-filter {
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-
-    .btn-filter:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    /* Responsive Adjustments */
-    @media (max-width: 768px) {
-        .search-container {
-            width: 100%;
-            margin-bottom: 10px;
-        }
-        
-        .d-flex.gap-3 {
-            flex-direction: column;
-            width: 100%;
-        }
-        
-        .btn-filter {
-            width: 100%;
-        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-{% if user.is_authenticated %}
+<!-- Balance Summary Section -->
 <div class="container-fluid mt-4">
-    <div class="row">
-        <!-- Main Content (Left Side) -->
-        <div class="col-md-9">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <div class="d-flex flex-column">
-                        <!-- Search and Filter Header -->
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="mb-0 text-success">
-                                <i class="fas fa-file-invoice-dollar me-2"></i>Financial Records
-                            </h5>
-                            <div class="d-flex gap-3">
-                                <!-- Enhanced Quick Search -->
-                                <div class="search-container">
-                                    <div class="search-wrapper">
-                                        <i class="fas fa-search search-icon"></i>
-                                        <input type="text" id="quickSearch" class="search-input" placeholder="Search records...">
-                                        <button class="search-clear" id="clearSearch" type="button">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <!-- Filter Toggle -->
-                                <button class="btn btn-success btn-filter" id="toggleFilters">
-                                    <i class="fas fa-sliders-h me-2"></i>Filters
-                                </button>
-                            </div>
-                        </div>
+    <div class="row g-3 mb-4">
+        <!-- Total Balance -->
+        <div class="col">
+            <div class="card shadow-sm balance-card total h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-1">Total Balance</h6>
+                    <div class="balance-amount text-primary">
+                        {{ total_balance|floatformat:2 }} AFN
+                    </div>
+                    <small class="text-muted">Updated: {{ last_update|date:"Y-m-d H:i" }}</small>
+                </div>
+            </div>
+        </div>
+        <!-- Income Total -->
+        <div class="col">
+            <div class="card shadow-sm balance-card income h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-1">Total Income</h6>
+                    <div class="balance-amount text-success">
+                        {{ total_income|floatformat:2 }} AFN
+                    </div>
+                    <small class="text-muted">From {{ income_records.count }} records</small>
+                </div>
+            </div>
+        </div>
+        <!-- Expense Total -->
+        <div class="col">
+            <div class="card shadow-sm balance-card expense h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-1">Total Expenses</h6>
+                    <div class="balance-amount text-danger">
+                        {{ total_expenses|floatformat:2 }} AFN
+                    </div>
+                    <small class="text-muted">From {{ expense_records.count }} records</small>
+                </div>
+            </div>
+        </div>
+        <!-- Outstanding Advances -->
+        <div class="col">
+            <div class="card shadow-sm balance-card advance h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-1">Outstanding Advances</h6>
+                    <div class="balance-amount text-warning">
+                        {{ outstanding_advances|floatformat:2 }} AFN
+                    </div>
+                    <small class="text-muted">From {{ pending_advances }} advances</small>
+                </div>
+            </div>
+        </div>
+        <!-- Outstanding Payables -->
+        <div class="col">
+            <div class="card shadow-sm balance-card payable h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-1">Payables</h6>
+                    <div class="balance-amount text-info">
+                        {{ total_payables|floatformat:2 }} AFN
+                    </div>
+                    <small class="text-muted">From {{ pending_payables }} unpaid payables</small>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                        <!-- Advanced Filters Section -->
-                        <div class="filter-section rounded-3 border" id="filterSection" style="display: none;">
-                            <form method="GET" class="search-form">
-                                <div class="row g-3">
-                                    <!-- First Row -->
-                                    <div class="col-md-3">
-                                        <label class="form-label small">Transaction Type</label>
-                                        <select name="transaction_type" class="form-select form-select-sm">
-                                            <option value="">All Types</option>
-                                            <option value="income">Income</option>
-                                            <option value="expense">Expense</option>
-                                            <option value="advance">Advance</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small">Status</label>
-                                        <select name="status" class="form-select form-select-sm">
-                                            <option value="">All Status</option>
-                                            <option value="approved">Approved</option>
-                                            <option value="pending">Pending</option>
-                                            <option value="rejected">Rejected</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small">Date Range</label>
-                                        <select name="date_range" class="form-select form-select-sm">
-                                            <option value="">All Time</option>
-                                            <option value="today">Today</option>
-                                            <option value="week">This Week</option>
-                                            <option value="month">This Month</option>
-                                            <option value="year">This Year</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small">Amount Range</label>
-                                        <select name="amount_range" class="form-select form-select-sm">
-                                            <option value="">All Amounts</option>
-                                            <option value="0-1000">0 - 1,000 AFN</option>
-                                            <option value="1000-10000">1,000 - 10,000 AFN</option>
-                                            <option value="10000+">10,000+ AFN</option>
-                                        </select>
-                                    </div>
-                                </div>
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs" id="recordTabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="all-tab" data-bs-toggle="tab" href="#all" role="tab">
+                <i class="fas fa-table me-2"></i>All Records
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="income-tab" data-bs-toggle="tab" href="#income" role="tab">
+                <i class="fas fa-arrow-up me-2"></i>Income
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="expense-tab" data-bs-toggle="tab" href="#expense" role="tab">
+                <i class="fas fa-arrow-down me-2"></i>Expense
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="advance-tab" data-bs-toggle="tab" href="#advance" role="tab">
+                <i class="fas fa-forward me-2"></i>Advance
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="balance-tab" data-bs-toggle="tab" href="#balance" role="tab">
+                <i class="fas fa-balance-scale me-2"></i>Balance
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="payable-tab" data-bs-toggle="tab" href="#payable" role="tab">
+                <i class="fas fa-hand-holding-usd me-2"></i>Payables
+            </a>
+        </li>
+        {% if user.is_superuser %}
+        <li class="nav-item ms-auto">
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllRecordsModal">
+                <i class="fas fa-trash-alt me-2"></i>Delete All Records
+            </button>
+        </li>
+        {% endif %}
+    </ul>
 
-                                <!-- Action Buttons -->
-                                <div class="d-flex justify-content-end gap-2 mt-3">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="clearFilters">
-                                        <i class="fas fa-eraser me-1"></i>Clear
-                                    </button>
-                                    <button type="submit" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-check me-1"></i>Apply Filters
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+    <!-- Tab Content -->
+    <div class="tab-content" id="recordTabsContent">
+        <!-- All Records Tab -->
+        <div class="tab-pane fade show active" id="all" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">All Records</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportTableToCSV('allRecordsTable', 'all_records')">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportTableToExcel('allRecordsTable', 'all_records')">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
                     </div>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
+                        <table class="table table-striped table-hover" id="allRecordsTable">
+                            <thead>
                                 <tr>
-                                    <th class="fw-semibold">No</th>
-                                    <th class="fw-semibold">Transaction Type</th>
-                                    <th class="fw-semibold">Item Name</th>
-                                    <th class="fw-semibold">Item Type</th>
-                                    <th class="fw-semibold">Description</th>
-                                    <th class="fw-semibold">Project</th>
-                                    <th class="fw-semibold">Location</th>
-                                    <th class="fw-semibold">Requester</th>
-                                    <th class="fw-semibold">Unit Measure</th>
-                                    <th class="fw-semibold">Quantity</th>
-                                    <th class="fw-semibold">Unit Price</th>
-                                    <th class="fw-semibold">Total Value</th>
-                                    <th class="fw-semibold">Date</th>
-                                    <th class="fw-semibold">Reviewer</th>
-                                    <th class="fw-semibold">Result</th>
-                                    <th class="fw-semibold">Approval</th>
-                                    <th class="fw-semibold">Cashier Status</th>
-                                    <th class="fw-semibold">Actions</th>
+                                    <th>Date</th>
+                                    <th>Reference</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Created By</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for record in records %}
-                                    <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ record.transaction_type|lower }}-subtle text-{{ record.transaction_type|lower }}">
-                                                {{ record.transaction_type }}
-                                            </span>
-                                        </td>
-                                        <td>{{ record.item_name }}</td>
-                                        <td>{{ record.item_type }}</td>
-                                        <td class="text-truncate" style="max-width: 200px;" title="{{ record.description }}">
-                                            {{ record.description }}
-                                        </td>
-                                        <td>{{ record.project }}</td>
-                                        <td>{{ record.location }}</td>
-                                        <td>{{ record.requester }}</td>
-                                        <td>{{ record.unit_measure }}</td>
-                                        <td>{{ record.quantity }}</td>
-                                        <td>{{ record.unit_price|floatformat:2 }} AFN</td>
-                                        <td>{{ record.total_value|floatformat:2 }} AFN</td>
-                                        <td>{{ record.date|date:"d/m/Y" }}</td>
-                                        <td>{{ record.reviewer }}</td>
-                                        <td>
-                                            <span class="badge {% if record.chief_executive_approval %}bg-success
-                                                   {% elif record.deputy_director_approval %}bg-info
-                                                   {% elif record.executive_director_approval %}bg-primary
-                                                   {% else %}bg-warning{% endif %}">
-                                                {% if record.chief_executive_approval %}
-                                                    Chief Approved
-                                                {% elif record.deputy_director_approval %}
-                                                    Deputy Approved
-                                                {% elif record.executive_director_approval %}
-                                                    Executive Approved
-                                                {% else %}
-                                                    Pending
-                                                {% endif %}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="badge {% if record.approval_status == 'approved' %}bg-success{% elif record.approval_status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %}">
-                                                {{ record.approval_status }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-info">{{ record.cashier_status }}</span>
-                                        </td>
-                                        <td>
-                                            <div class="btn-group">
-                                                <a href="{% url 'record_detail' record.id %}" class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                {% if user.can_edit_record %}
-                                                <a href="{% url 'edit_record' record.id %}" class="btn btn-sm btn-outline-secondary">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {% empty %}
-                                    <tr>
-                                        <td colspan="18" class="text-center py-4">
-                                            <i class="fas fa-folder-open text-muted mb-2" style="font-size: 2rem;"></i>
-                                            <p class="text-muted mb-0">No records found</p>
-                                        </td>
-                                    </tr>
+                                {% for record in all_records %}
+                                <tr>
+                                    <td class="date-cell">{{ record.created_at|date:"Y-m-d H:i" }}</td>
+                                    <td>{{ record.reference_number }}</td>
+                                    <td>{{ record.transaction_type|title }}</td>
+                                    <td>{{ record.description }}</td>
+                                    <td class="amount-cell">{{ record.amount|floatformat:2 }} AFN</td>
+                                    <td>
+                                        <span class="status-badge status-{{ record.status }}">
+                                            {% if record.status == 'pending' %}
+                                                <i class="fas fa-clock"></i>
+                                            {% elif record.status == 'approved' %}
+                                                <i class="fas fa-check-circle"></i>
+                                            {% elif record.status == 'rejected' %}
+                                                <i class="fas fa-times-circle"></i>
+                                            {% elif record.status == 'pending_deputy' %}
+                                                <i class="fas fa-user-clock"></i>
+                                            {% elif record.status == 'pending_executive' %}
+                                                <i class="fas fa-user-shield"></i>
+                                            {% elif record.status == 'pending_ceo' %}
+                                                <i class="fas fa-crown"></i>
+                                            {% endif %}
+                                            {{ record.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ record.created_by.username }}</td>
+                                    <td class="action-buttons">
+                                        <a href="{% url 'website:record_detail' record.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if user.is_superuser or user == record.created_by %}
+                                        <a href="{% url 'website:edit_record' record.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -1050,105 +287,741 @@
             </div>
         </div>
 
-        <!-- Financial Summary Widgets (Right Side) -->
-        <div class="col-md-3">
-            <div class="widgets-container sticky-top" style="top: 20px;">
-                <div class="stat-card balance">
-                    <div class="stat-card__content">
-                        <div class="stat-card__icon">
-                            <i class="fas fa-wallet"></i>
-                        </div>
-                        <div class="stat-card__info">
-                            <p class="stat-card__title">Total Balance</p>
-                            <h3 class="stat-card__value">{{ total_balance|floatformat:2 }} AFN</h3>
-                        </div>
+        <!-- Income Tab -->
+        <div class="tab-pane fade" id="income" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Income Records</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportTableToCSV('incomeTable', 'income_records')">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportTableToExcel('incomeTable', 'income_records')">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
                     </div>
                 </div>
-                
-                <div class="stat-card income">
-                    <div class="stat-card__content">
-                        <div class="stat-card__icon">
-                            <i class="fas fa-arrow-trend-up"></i>
-                        </div>
-                        <div class="stat-card__info">
-                            <p class="stat-card__title">Total Income</p>
-                            <h3 class="stat-card__value">{{ total_income|floatformat:2 }} AFN</h3>
-                        </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="incomeTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Reference</th>
+                                    <th>Source</th>
+                                    <th>Category</th>
+                                    <th>Payment Method</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Created By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in income_records %}
+                                <tr>
+                                    <td class="date-cell">{{ record.created_at|date:"Y-m-d H:i" }}</td>
+                                    <td>{{ record.reference_number }}</td>
+                                    <td>{{ record.get_income_source_display|default:"-" }}</td>
+                                    <td>{{ record.get_income_category_display|default:"-" }}</td>
+                                    <td>{{ record.get_payment_method_display|default:"-" }}</td>
+                                    <td>{{ record.description }}</td>
+                                    <td class="amount-cell">{{ record.amount|floatformat:2 }} AFN</td>
+                                    <td>
+                                        <span class="status-badge status-{{ record.status }}">
+                                            {% if record.status == 'pending' %}
+                                                <i class="fas fa-clock"></i>
+                                            {% elif record.status == 'approved' %}
+                                                <i class="fas fa-check-circle"></i>
+                                            {% elif record.status == 'rejected' %}
+                                                <i class="fas fa-times-circle"></i>
+                                            {% elif record.status == 'pending_deputy' %}
+                                                <i class="fas fa-user-clock"></i>
+                                            {% elif record.status == 'pending_executive' %}
+                                                <i class="fas fa-user-shield"></i>
+                                            {% elif record.status == 'pending_ceo' %}
+                                                <i class="fas fa-crown"></i>
+                                            {% endif %}
+                                            {{ record.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ record.created_by.username }}</td>
+                                    <td class="action-buttons">
+                                        <a href="{% url 'website:record_detail' record.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if user.is_superuser or user == record.created_by %}
+                                        <a href="{% url 'website:edit_record' record.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                
-                <div class="stat-card expense">
-                    <div class="stat-card__content">
-                        <div class="stat-card__icon">
-                            <i class="fas fa-arrow-trend-down"></i>
-                        </div>
-                        <div class="stat-card__info">
-                            <p class="stat-card__title">Total Expense</p>
-                            <h3 class="stat-card__value">{{ total_expense|floatformat:2 }} AFN</h3>
-                        </div>
+            </div>
+        </div>
+
+        <!-- Expense Tab -->
+        <div class="tab-pane fade" id="expense" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Expense Records</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportTableToCSV('expenseTable', 'expense_records')">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportTableToExcel('expenseTable', 'expense_records')">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
                     </div>
                 </div>
-                
-                <div class="stat-card advance">
-                    <div class="stat-card__content">
-                        <div class="stat-card__icon">
-                            <i class="fas fa-hand-holding-dollar"></i>
-                        </div>
-                        <div class="stat-card__info">
-                            <p class="stat-card__title">Total Advance</p>
-                            <h3 class="stat-card__value">{{ total_advance|floatformat:2 }} AFN</h3>
-                        </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="expenseTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Reference</th>
+                                    <th>Category</th>
+                                    <th>Type</th>
+                                    <th>Vendor</th>
+                                    <th>Receipt #</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Created By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in expense_records %}
+                                <tr>
+                                    <td class="date-cell">{{ record.created_at|date:"Y-m-d H:i" }}</td>
+                                    <td>{{ record.reference_number }}</td>
+                                    <td>{{ record.get_expense_category_display|default:"-" }}</td>
+                                    <td>{{ record.get_expense_type_display|default:"-" }}</td>
+                                    <td>{{ record.vendor|default:"-" }}</td>
+                                    <td>{{ record.receipt_number|default:"-" }}</td>
+                                    <td>{{ record.description }}</td>
+                                    <td class="amount-cell">{{ record.amount|floatformat:2 }} AFN</td>
+                                    <td>
+                                        <span class="status-badge status-{{ record.status }}">
+                                            {% if record.status == 'pending' %}
+                                                <i class="fas fa-clock"></i>
+                                            {% elif record.status == 'approved' %}
+                                                <i class="fas fa-check-circle"></i>
+                                            {% elif record.status == 'rejected' %}
+                                                <i class="fas fa-times-circle"></i>
+                                            {% elif record.status == 'pending_deputy' %}
+                                                <i class="fas fa-user-clock"></i>
+                                            {% elif record.status == 'pending_executive' %}
+                                                <i class="fas fa-user-shield"></i>
+                                            {% elif record.status == 'pending_ceo' %}
+                                                <i class="fas fa-crown"></i>
+                                            {% endif %}
+                                            {{ record.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ record.created_by.username }}</td>
+                                    <td class="action-buttons">
+                                        <a href="{% url 'website:record_detail' record.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if user.is_superuser or user == record.created_by %}
+                                        <a href="{% url 'website:edit_record' record.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advance Tab -->
+        <div class="tab-pane fade" id="advance" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Advance Records</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportTableToCSV('advanceTable', 'advance_records')">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportTableToExcel('advanceTable', 'advance_records')">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="advanceTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Reference</th>
+                                    <th>Description</th>
+                                    <th>Recipient</th>
+                                    <th>Position</th>
+                                    <th>Payment Method</th>
+                                    <th>Amount</th>
+                                    <th>Remaining</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in advance_records %}
+                                {% with remaining=record.get_remaining_amount %}
+                                <tr>
+                                    <td class="date-cell">{{ record.created_at|date:"Y-m-d" }}</td>
+                                    <td>{{ record.reference_number }}</td>
+                                    <td>{{ record.description }}</td>
+                                    <td>{{ record.recipient_name|default:"-" }}</td>
+                                    <td>{{ record.recipient_position|default:"-" }}</td>
+                                    <td>{{ record.get_payment_method_display|default:"-" }}</td>
+                                    <td class="amount-cell">{{ record.amount|floatformat:2 }} AFN</td>
+                                    <td class="amount-cell">{{ remaining|floatformat:2 }} AFN</td>
+                                    <td>
+                                        {% if remaining == 0 %}
+                                            <span class="badge bg-success">Paid</span>
+                                        {% elif remaining < record.amount %}
+                                            <span class="badge bg-warning">Partial</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Unpaid</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="action-buttons">
+                                        {% if record.status == 'approved' and remaining > 0 %}
+                                            <a href="{% url 'website:advance_repayment' record.id %}" class="btn btn-sm btn-success" title="Repay Advance">
+                                                <i class="fas fa-money-bill-wave"></i> Repay
+                                            </a>
+                                        {% endif %}
+                                        <a href="{% url 'website:record_detail' record.id %}" class="btn btn-sm btn-info" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if user.is_superuser or user == record.created_by %}
+                                            <a href="{% url 'website:edit_record' record.id %}" class="btn btn-sm btn-warning" title="Edit Record">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endwith %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance Tab -->
+        <div class="tab-pane fade" id="balance" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Balance Records</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportTableToCSV('balanceTable', 'balance_records')">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportTableToExcel('balanceTable', 'balance_records')">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="balanceTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Reference</th>
+                                    <th>Type</th>
+                                    <th>Account</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Created By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in balance_records %}
+                                <tr>
+                                    <td class="date-cell">{{ record.created_at|date:"Y-m-d H:i" }}</td>
+                                    <td>{{ record.reference_number }}</td>
+                                    <td>{{ record.get_balance_type_display|default:"-" }}</td>
+                                    <td>{{ record.account|default:"-" }}</td>
+                                    <td>{{ record.description }}</td>
+                                    <td class="amount-cell">{{ record.amount|floatformat:2 }} AFN</td>
+                                    <td>
+                                        <span class="status-badge status-{{ record.status }}">
+                                            {% if record.status == 'pending' %}
+                                                <i class="fas fa-clock"></i>
+                                            {% elif record.status == 'approved' %}
+                                                <i class="fas fa-check-circle"></i>
+                                            {% elif record.status == 'rejected' %}
+                                                <i class="fas fa-times-circle"></i>
+                                            {% elif record.status == 'pending_deputy' %}
+                                                <i class="fas fa-user-clock"></i>
+                                            {% elif record.status == 'pending_executive' %}
+                                                <i class="fas fa-user-shield"></i>
+                                            {% elif record.status == 'pending_ceo' %}
+                                                <i class="fas fa-crown"></i>
+                                            {% endif %}
+                                            {{ record.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ record.created_by.username }}</td>
+                                    <td class="action-buttons">
+                                        <a href="{% url 'website:record_detail' record.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if user.is_superuser or user == record.created_by %}
+                                        <a href="{% url 'website:edit_record' record.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payables Tab -->
+        <div class="tab-pane fade" id="payable" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Payable Records</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportTableToCSV('payableTable', 'payable_records')">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportTableToExcel('payableTable', 'payable_records')">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="payableTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Reference</th>
+                                    <th>Payment Type</th>
+                                    <th>Lender</th>
+                                    <th>Due Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Created By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in payable_records %}
+                                <tr>
+                                    <td class="date-cell">{{ record.created_at|date:"Y-m-d H:i" }}</td>
+                                    <td>{{ record.reference_number }}</td>
+                                    <td>{{ record.payment_method|title }}</td>
+                                    <td>{{ record.lender_name }}</td>
+                                    <td>{{ record.due_date|date:"Y-m-d" }}</td>
+                                    <td class="amount-cell">{{ record.amount|floatformat:2 }} AFN</td>
+                                    <td>
+                                        <span class="status-badge {% if record.is_paid %}status-approved{% else %}status-pending{% endif %}">
+                                            {% if record.is_paid %}Paid{% else %}Unpaid{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>{{ record.created_by.username }}</td>
+                                    <td class="action-buttons">
+                                        <a href="{% url 'website:record_detail' record.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if not record.is_paid and user.user_type in 'data_entry,cashier' %}
+                                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#payableRepaymentModal_{{ record.id }}">
+                                            <i class="fas fa-money-bill"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% if user.is_superuser or user == record.created_by %}
+                                        <a href="{% url 'website:edit_record' record.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endif %}
-{% endblock %}
 
-{% block extra_js %}
+<!-- Payback Modal -->
+<div class="modal fade" id="paybackModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Record Advance Payback</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="paybackForm" method="POST" action="{% url 'website:record_payback' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="record_id" id="paybackRecordId">
+                    <div class="mb-3">
+                        <label class="form-label">Amount to Pay Back</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="amount" 
+                                   step="0.01" required id="paybackAmount">
+                            <span class="input-group-text">AFN</span>
+                        </div>
+                        <small class="text-muted">Remaining: <span id="remainingAmount">0.00</span> AFN</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Date</label>
+                        <input type="date" class="form-control" name="payment_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method</label>
+                        <select class="form-select" name="payment_method" required>
+                            <option value="cash">Cash</option>
+                            <option value="bank">Bank Transfer</option>
+                            <option value="deduction">Salary Deduction</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" name="notes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Record Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Installments Modal -->
+<div class="modal fade" id="installmentsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Payment History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="installment-list">
+                    <!-- Installments will be loaded here via AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payable Repayment Modal -->
+{% for record in payable_records %}
+{% if not record.is_paid %}
+<div class="modal fade" id="payableRepaymentModal_{{ record.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'website:payable_repayment' record.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Record Payable Repayment - {{ record.reference_number }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="amount_{{ record.id }}" class="form-label">Payment Amount</label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" min="0" max="{{ record.amount }}" class="form-control" 
+                                id="amount_{{ record.id }}" name="amount" required
+                                placeholder="Enter amount">
+                            <span class="input-group-text">AFN</span>
+                        </div>
+                        <small class="text-muted">Total amount to pay: {{ record.amount|floatformat:2 }} AFN</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payment_method_{{ record.id }}" class="form-label">Payment Method</label>
+                        <select class="form-select" id="payment_method_{{ record.id }}" name="payment_method" required>
+                            <option value="">Select Payment Method</option>
+                            <option value="cash">Cash</option>
+                            <option value="bank">Bank Transfer</option>
+                            <option value="check">Check</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payment_date_{{ record.id }}" class="form-label">Payment Date</label>
+                        <input type="date" class="form-control" id="payment_date_{{ record.id }}" name="payment_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes_{{ record.id }}" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes_{{ record.id }}" name="notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<!-- Delete All Records Confirmation Modal -->
+{% if user.is_superuser %}
+<div class="modal fade" id="deleteAllRecordsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'website:delete_all_records' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">⚠️ Delete All Records</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading">Warning: This action cannot be undone!</h6>
+                        <p class="mb-0">This will permanently delete all records and reset the database sequence. Are you absolutely sure you want to proceed?</p>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                        <label class="form-check-label" for="confirmDelete">
+                            I understand that this action is irreversible and will delete all records
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete All Records</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% block scripts %}
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const toggleFilters = document.getElementById('toggleFilters');
-        const filterSection = document.getElementById('filterSection');
-        const clearFilters = document.getElementById('clearFilters');
-        const quickSearch = document.getElementById('quickSearch');
-        
-        // Toggle filters
-        toggleFilters.addEventListener('click', function() {
-            const isVisible = filterSection.style.display !== 'none';
-            filterSection.style.display = isVisible ? 'none' : 'block';
-            toggleFilters.classList.toggle('active', !isVisible);
-        });
-        
-        // Quick search functionality
-        quickSearch.addEventListener('input', debounce(function(e) {
-            document.querySelector('input[name="search"]').value = e.target.value;
-            document.querySelector('.search-form').submit();
-        }, 500));
-        
-        // Clear filters
-        clearFilters.addEventListener('click', function() {
-            const form = document.querySelector('.search-form');
-            const inputs = form.querySelectorAll('input, select');
-            inputs.forEach(input => input.value = '');
-            quickSearch.value = '';
-            form.submit();
-        });
-        
-        // Debounce function
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
+$(document).ready(function() {
+    // Initialize DataTables
+    $('#allRecordsTable').DataTable({
+        order: [[0, 'desc']],
+        pageLength: 10,
+        language: {
+            search: "Search records:"
         }
     });
+
+    $('#incomeTable').DataTable({
+        order: [[0, 'desc']],
+        pageLength: 10
+    });
+
+    $('#expenseTable').DataTable({
+        order: [[0, 'desc']],
+        pageLength: 10
+    });
+
+    $('#advanceTable').DataTable({
+        order: [[0, 'desc']],
+        pageLength: 10
+    });
+
+    $('#balanceTable').DataTable({
+        order: [[0, 'desc']],
+        pageLength: 10
+    });
+
+    // Handle Payback Modal
+    $('#paybackModal').on('show.bs.modal', function (event) {
+        const button = $(event.relatedTarget);
+        const recordId = button.data('record-id');
+        const remaining = button.data('remaining');
+        
+        $('#paybackRecordId').val(recordId);
+        $('#remainingAmount').text(remaining.toFixed(2));
+        $('#paybackAmount').attr('max', remaining);
+    });
+
+    // Handle Installments Modal
+    $('#installmentsModal').on('show.bs.modal', function (event) {
+        const button = $(event.relatedTarget);
+        const recordId = button.data('record-id');
+        
+        // Load installments via AJAX
+        $.get(`/website/record/${recordId}/installments/`, function(data) {
+            const list = $('.installment-list');
+            list.empty();
+            
+            if (data.installments.length === 0) {
+                list.append('<p class="text-muted text-center">No payments recorded yet.</p>');
+                return;
+            }
+
+            const table = $('<table class="table table-sm">').appendTo(list);
+            table.append(`
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                    </tr>
+                </thead>
+            `);
+            
+            const tbody = $('<tbody>').appendTo(table);
+            data.installments.forEach(item => {
+                tbody.append(`
+                    <tr>
+                        <td>${item.date}</td>
+                        <td class="text-end">${item.amount.toFixed(2)} AFN</td>
+                        <td>${item.method}</td>
+                    </tr>
+                `);
+            });
+        });
+    });
+});
+
+function exportTableToCSV(tableId, filename) {
+    const table = document.getElementById(tableId);
+    const rows = table.querySelectorAll('tr');
+    const csv = [];
+    
+    for (const row of rows) {
+        const rowData = [];
+        const cols = row.querySelectorAll('td, th');
+        
+        for (const col of cols) {
+            // Get text content and clean it
+            let text = col.textContent.trim();
+            
+            // Handle special cases
+            if (text.includes('AFN')) {
+                text = text.replace('AFN', '').trim();
+            }
+            
+            // Handle status badges
+            if (col.querySelector('.badge')) {
+                text = col.querySelector('.badge').textContent.trim();
+            }
+            
+            // Handle dates
+            if (col.classList.contains('date-cell')) {
+                const date = new Date(text);
+                if (!isNaN(date)) {
+                    text = date.toISOString().split('T')[0];
+                }
+            }
+            
+            // Handle amounts
+            if (col.classList.contains('amount-cell')) {
+                text = text.replace(/[^\d.-]/g, '');
+            }
+            
+            // Escape quotes and wrap in quotes if contains comma
+            if (text.includes(',')) {
+                text = `"${text.replace(/"/g, '""')}"`;
+            }
+            
+            rowData.push(text);
+        }
+        csv.push(rowData.join(','));
+    }
+    
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}_${formatDate(new Date())}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function exportTableToExcel(tableId, filename) {
+    const table = document.getElementById(tableId);
+    
+    // Create a copy of the table to modify for export
+    const exportTable = table.cloneNode(true);
+    
+    // Clean up data in the copy
+    exportTable.querySelectorAll('td').forEach(cell => {
+        // Handle status badges
+        const badge = cell.querySelector('.badge');
+        if (badge) {
+            cell.textContent = badge.textContent.trim();
+        }
+        
+        // Handle amounts
+        if (cell.classList.contains('amount-cell')) {
+            cell.textContent = cell.textContent.replace(/[^\d.-]/g, '');
+        }
+        
+        // Handle dates
+        if (cell.classList.contains('date-cell')) {
+            const date = new Date(cell.textContent);
+            if (!isNaN(date)) {
+                cell.textContent = date.toISOString().split('T')[0];
+            }
+        }
+    });
+    
+    const ws = XLSX.utils.table_to_sheet(exportTable);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Records');
+    
+    // Auto-size columns
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    const cols = [];
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+        let max_width = 0;
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            const cell = ws[XLSX.utils.encode_cell({r: R, c: C})];
+            if (cell && cell.v) {
+                const text = cell.v.toString();
+                max_width = Math.max(max_width, text.length);
+            }
+        }
+        cols[C] = {wch: max_width + 2};
+    }
+    ws['!cols'] = cols;
+    
+    XLSX.writeFile(wb, `${filename}_${formatDate(new Date())}.xlsx`);
+}
+
+function formatDate(date) {
+    return date.toISOString().split('T')[0].replace(/-/g, '');
+}
 </script>
+
+<!-- Add SheetJS library for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+{% endblock %}
 {% endblock %}

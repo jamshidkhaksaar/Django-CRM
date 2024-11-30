@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">User Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="theme" class="form-label">Theme</label>
+                            {{ form.theme }}
+                            {% if form.theme.errors %}
+                                <div class="invalid-feedback d-block">{{ form.theme.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="language" class="form-label">Language</label>
+                            {{ form.language }}
+                            {% if form.language.errors %}
+                                <div class="invalid-feedback d-block">{{ form.language.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.notifications_enabled }}
+                                <label class="form-check-label" for="notifications_enabled">
+                                    Enable Notifications
+                                </label>
+                            </div>
+                            {% if form.notifications_enabled.errors %}
+                                <div class="invalid-feedback d-block">{{ form.notifications_enabled.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.email_notifications }}
+                                <label class="form-check-label" for="email_notifications">
+                                    Enable Email Notifications
+                                </label>
+                            </div>
+                            {% if form.email_notifications.errors %}
+                                <div class="invalid-feedback d-block">{{ form.email_notifications.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="items_per_page" class="form-label">Items Per Page</label>
+                            {{ form.items_per_page }}
+                            {% if form.items_per_page.errors %}
+                                <div class="invalid-feedback d-block">{{ form.items_per_page.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

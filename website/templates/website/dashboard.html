@@ -1,0 +1,442 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Time Period Filter -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Financial Analytics Dashboard</h1>
+        <div class="d-flex gap-2">
+            <select class="form-select" id="yearSelect" style="width: auto;">
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+            </select>
+            <div class="btn-group">
+                <button class="btn btn-outline-primary" onclick="filterData('week')">Week</button>
+                <button class="btn btn-outline-primary" onclick="filterData('month')">Month</button>
+                <button class="btn btn-outline-primary active" onclick="filterData('year')">Year</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Performance Indicators -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="card bg-gradient-success text-white h-100">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-1 small">Net Profit</h6>
+                            <h3 class="mb-1">{{ net_profit|floatformat:2 }} AFN</h3>
+                            <small class="fs-xs">↑ {{ profit_growth }}% vs last period</small>
+                        </div>
+                        <div class="icon-shape bg-white text-success rounded-circle">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-gradient-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-1">Cash Flow</h6>
+                            <h2 class="mb-1">{{ cash_flow|floatformat:2 }} AFN</h2>
+                            <small>{{ cash_flow_status }}</small>
+                        </div>
+                        <div class="icon-shape bg-white text-primary rounded-circle">
+                            <i class="fas fa-money-bill-wave fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-gradient-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-1">Outstanding Advances</h6>
+                            <h2 class="mb-1">{{ outstanding_advances|floatformat:2 }} AFN</h2>
+                            <small>{{ advance_count }} active advances</small>
+                        </div>
+                        <div class="icon-shape bg-white text-info rounded-circle">
+                            <i class="fas fa-hand-holding-usd fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-gradient-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-1">Pending Approvals</h6>
+                            <h2 class="mb-1">{{ pending_amount|floatformat:2 }} AFN</h2>
+                            <small>{{ pending_count }} transactions</small>
+                        </div>
+                        <div class="icon-shape bg-white text-warning rounded-circle">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Analysis Charts -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-8">
+            <div class="card h-100">
+                <div class="card-header py-2">
+                    <h6 class="mb-0">Profit & Loss Analysis</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="profitLossChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header py-2">
+                    <h6 class="mb-0">Expense Breakdown</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="expenseBreakdownChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Health Indicators -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header py-2">
+                    <h6 class="mb-0">Financial Health Metrics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Profit Margin</td>
+                                    <td>{{ profit_margin }}%</td>
+                                    <td><span class="badge {% if profit_margin > 20 %}bg-success{% else %}bg-warning{% endif %}">
+                                        {{ profit_margin_status }}
+                                    </span></td>
+                                </tr>
+                                <tr>
+                                    <td>Cash Flow Ratio</td>
+                                    <td>{{ cash_flow_ratio }}</td>
+                                    <td><span class="badge {% if cash_flow_ratio > 1 %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ cash_flow_status }}
+                                    </span></td>
+                                </tr>
+                                <tr>
+                                    <td>Advance Recovery Rate</td>
+                                    <td>{{ advance_recovery_rate }}%</td>
+                                    <td><span class="badge {% if advance_recovery_rate > 80 %}bg-success{% else %}bg-warning{% endif %}">
+                                        {{ recovery_status }}
+                                    </span></td>
+                                </tr>
+                                <tr>
+                                    <td>Operating Efficiency</td>
+                                    <td>{{ operating_efficiency }}%</td>
+                                    <td><span class="badge {% if operating_efficiency > 85 %}bg-success{% else %}bg-warning{% endif %}">
+                                        {{ efficiency_status }}
+                                    </span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header py-2">
+                    <h6 class="mb-0">Cash Flow Forecast</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="cashFlowForecastChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <h6 class="mb-0">High-Value Transactions</h6>
+            <a href="{% url 'website:all_records' %}" class="btn btn-sm btn-primary">View All Records</a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Reference</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in high_value_transactions %}
+                        <tr>
+                            <td>{{ transaction.created_at|date:"M d, Y" }}</td>
+                            <td>{{ transaction.reference_number }}</td>
+                            <td>
+                                <span class="badge {% if transaction.transaction_type == 'income' %}bg-success
+                                           {% elif transaction.transaction_type == 'expense' %}bg-danger
+                                           {% elif transaction.transaction_type == 'advance' %}bg-info
+                                           {% else %}bg-primary{% endif %}">
+                                    {{ transaction.transaction_type|title }}
+                                </span>
+                            </td>
+                            <td>{{ transaction.amount|floatformat:2 }} AFN</td>
+                            <td>
+                                <span class="badge {% if transaction.status == 'approved' %}bg-success
+                                           {% elif transaction.status == 'rejected' %}bg-danger
+                                           {% else %}bg-warning{% endif %}">
+                                    {{ transaction.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'website:record_detail' transaction.id %}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if transaction.transaction_type == 'advance' and transaction.status == 'approved' %}
+                                    {% with remaining_amount=transaction.get_remaining_amount %}
+                                        {% if remaining_amount > 0 %}
+                                        <a href="{% url 'website:advance_repayment' transaction.id %}" class="btn btn-sm btn-outline-success" title="Record Payment">
+                                            <i class="fas fa-money-bill-wave"></i>
+                                        </a>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Profit & Loss Analysis Chart
+const profitLossCtx = document.getElementById('profitLossChart').getContext('2d');
+new Chart(profitLossCtx, {
+    type: 'line',
+    data: {
+        labels: {{ monthly_labels|safe }},
+        datasets: [{
+            label: 'Income',
+            data: {{ monthly_income|safe }},
+            borderColor: '#1cc88a',
+            backgroundColor: 'rgba(28, 200, 138, 0.1)',
+            fill: true
+        },
+        {
+            label: 'Expenses',
+            data: {{ monthly_expenses|safe }},
+            borderColor: '#e74a3b',
+            backgroundColor: 'rgba(231, 74, 59, 0.1)',
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        },
+        plugins: {
+            title: {
+                display: true,
+                text: 'Monthly Income vs Expenses (AFN)'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return value.toLocaleString() + ' AFN';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Expense Breakdown Chart
+const expenseCtx = document.getElementById('expenseBreakdownChart').getContext('2d');
+new Chart(expenseCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Operating Expenses', 'Outstanding Advances', 'Pending Approvals'],
+        datasets: [{
+            data: [
+                {{ total_expenses|safe }},
+                {{ outstanding_advances|safe }},
+                {{ pending_amount|safe }}
+            ],
+            backgroundColor: [
+                '#e74a3b',
+                '#f6c23e',
+                '#858796'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Expense Distribution (AFN)'
+            }
+        }
+    }
+});
+
+// Cash Flow Forecast Chart
+const cashFlowCtx = document.getElementById('cashFlowForecastChart').getContext('2d');
+new Chart(cashFlowCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ monthly_labels|safe }},
+        datasets: [{
+            label: 'Net Cash Flow',
+            data: {{ monthly_income|safe }}.map((income, index) => income - {{ monthly_expenses|safe }}[index]),
+            backgroundColor: function(context) {
+                const value = context.dataset.data[context.dataIndex];
+                return value >= 0 ? '#1cc88a' : '#e74a3b';
+            }
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Monthly Cash Flow (AFN)'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return value.toLocaleString() + ' AFN';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Update time period filter
+function filterData(period) {
+    // Remove active class from all buttons
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+    
+    // Update charts based on period
+    // This would typically involve an AJAX call to get new data
+    // For now, we'll just console log the action
+    console.log('Filtering data for period:', period);
+}
+
+// Update chart view
+function updateChartView(view) {
+    // Remove active class from all buttons
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+    
+    // Update chart based on view
+    // This would typically involve regrouping the existing data
+    console.log('Updating chart view to:', view);
+}
+</script>
+
+<style>
+.bg-gradient-success {
+    background: linear-gradient(45deg, #1cc88a 10%, #13855c 100%);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(45deg, #4e73df 10%, #224abe 100%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(45deg, #36b9cc 10%, #258391 100%);
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(45deg, #f6c23e 10%, #dda20a 100%);
+}
+
+.icon-shape {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 69, 69, 0.15);
+    border: none;
+}
+
+.table > :not(caption) > * > * {
+    padding: 0.5rem;
+}
+
+.form-select {
+    cursor: pointer;
+}
+
+/* Additional styles for smaller widgets */
+.fs-xs {
+    font-size: 0.75rem;
+}
+
+.card-body {
+    padding: 0.75rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}

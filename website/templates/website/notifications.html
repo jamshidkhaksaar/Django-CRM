@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Notifications</h4>
+            {% if unread_count > 0 %}
+            <button id="markAllRead" class="btn btn-light btn-sm">
+                Mark All as Read
+            </button>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="list-group notification-list">
+                {% for notification in notifications %}
+                <div class="list-group-item notification-item {% if not notification.is_read %}unread{% endif %}" 
+                     data-notification-id="{{ notification.id }}">
+                    <div class="d-flex w-100 justify-content-between align-items-start">
+                        <div>
+                            <h5 class="mb-1">{{ notification.title }}</h5>
+                            <p class="mb-1">{{ notification.message }}</p>
+                            <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                        </div>
+                        {% if not notification.is_read %}
+                        <button class="btn btn-sm btn-success mark-read">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% if notification.record %}
+                    <div class="mt-2">
+                        <a href="{% url 'website:record_detail' notification.record.id %}" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i> View Record
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-4">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <p>No notifications found</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mark single notification as read
+    document.querySelectorAll('.mark-read').forEach(button => {
+        button.addEventListener('click', function() {
+            const notificationId = this.closest('.notification-item').dataset.notificationId;
+            markAsRead(notificationId, this.closest('.notification-item'));
+        });
+    });
+
+    // Mark all as read
+    document.getElementById('markAllRead')?.addEventListener('click', function() {
+        fetch('{% url "website:mark_all_notifications_read" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            }
+        });
+    });
+});
+
+function markAsRead(notificationId, element) {
+    fetch(`/notifications/${notificationId}/mark-read/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            element.classList.remove('unread');
+            element.querySelector('.mark-read')?.remove();
+            updateUnreadCount();
+        }
+    });
+}
+
+function updateUnreadCount() {
+    const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+    const markAllButton = document.getElementById('markAllRead');
+    if (unreadCount === 0 && markAllButton) {
+        markAllButton.remove();
+    }
+}
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,29 +1,15 @@
 <div class="approval-history mt-4">
     <h5>Approval Status</h5>
     <div class="approval-timeline">
-        {% if record.deputy_director_approval %}
+        {% for approval in record.approval_history %}
             <div class="approval-step completed">
-                <span class="badge bg-success">Deputy Director Approved</span>
-                <small>{{ record.deputy_director_comments }}</small>
+                <span class="badge bg-{{ approval.status|default:'warning' }}">
+                    {{ approval.role }} - {{ approval.status|title }}
+                </span>
+                <small>{{ approval.comments }}</small>
             </div>
-        {% endif %}
-        
-        {% if record.executive_director_approval %}
-            <div class="approval-step completed">
-                <span class="badge bg-success">Executive Director Approved</span>
-                <small>{{ record.executive_director_comments }}</small>
-            </div>
-        {% endif %}
-        
-        {% if record.chief_executive_approval %}
-            <div class="approval-step completed">
-                <span class="badge bg-success">Chief Executive Approved</span>
-                <small>{{ record.chief_executive_comments }}</small>
-            </div>
-        {% endif %}
-        
-        {% if not record.deputy_director_approval and not record.executive_director_approval and not record.chief_executive_approval %}
+        {% empty %}
             <p>No approvals yet</p>
-        {% endif %}
+        {% endfor %}
     </div>
 </div>

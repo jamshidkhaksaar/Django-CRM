@@ -1,185 +1,56 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'website/css/notifications.css' %}">
-<audio id="notificationSound" preload="auto">
-    <source src="{% static 'website/sounds/notification.mp3' %}" type="audio/mpeg">
-</audio>
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
-        <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
-            <img src="{% static 'website/images/LOGO.png' %}" alt="Logo" height="80" class="me-2">
-            <span class="d-none d-md-inline">NSDO Financial Control</span>
+        <a class="navbar-brand" href="{% url 'home' %}">
+            <img src="{% static 'website/images/LOGO.png' %}" alt="NSDO Logo" height="30">
+            NSDO Financial Control
         </a>
-        
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
-        
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav ms-auto align-items-center">
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                    </li>
+                    {% if user.is_staff %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'add_record' %}">
+                                <i class="fas fa-plus"></i> Add Record
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+            
+            <ul class="navbar-nav">
                 {% if user.is_authenticated %}
                     <!-- Notification Bell -->
-                    <li class="nav-item position-relative me-3">
+                    <li class="nav-item">
                         {% include 'includes/notification_bell.html' %}
                     </li>
                     
-                    <!-- Main Navigation Items -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">
-                            <i class="fas fa-home me-2"></i>Home
-                        </a>
-                    </li>
-                    
-                    <!-- Financial Records Dropdown -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="financialDropdown" 
-                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-file-invoice-dollar me-2"></i>Financial Records
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> {{ user.username }}
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="financialDropdown">
-                            <li>
-                                <a class="dropdown-item" href="{% url 'my_records' %}">
-                                    <i class="fas fa-folder me-2"></i>My Records
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{% url 'approved_records' %}">
-                                    <i class="fas fa-check-circle me-2"></i>Approved Records
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{% url 'rejected_records' %}">
-                                    <i class="fas fa-times-circle me-2"></i>Rejected Records
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{% url 'pending_records' %}">
-                                    <i class="fas fa-clock me-2"></i>Pending Records
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dashboard' %}">
-                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                        </a>
-                    </li>
-
-                    {% if user.is_staff %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'user_list' %}">
-                            <i class="fas fa-users me-2"></i>User Management
-                        </a>
-                    </li>
-                    {% endif %}
-
-                    {% if 'add_record' in user.has_menu_permission or user.is_superuser %}
-                    <li class="nav-item me-2">
-                        <button id="addRecordButton" class="btn btn-success btn-sm rounded-pill px-3">
-                            <i class="fas fa-plus"></i> Add Record
-                        </button>
-                    </li>
-                    {% endif %}
-
-                    <li class="nav-item">
-                        <a class="nav-link text-danger" href="{% url 'logout' %}">
-                            <i class="fas fa-sign-out-alt me-2"></i>Logout
-                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="{% url 'logout' %}">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
                     </li>
                 {% else %}
                     <li class="nav-item">
-                        <a class="nav-link btn btn-outline-light btn-sm rounded-pill px-3" href="{% url 'login' %}">
-                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        <a class="nav-link" href="{% url 'login' %}">
+                            <i class="fas fa-sign-in-alt"></i> Login
                         </a>
                     </li>
                 {% endif %}
             </ul>
         </div>
     </div>
-</nav>
-
-<style>
-.navbar {
-    padding: 0.5rem 1rem;
-    background-color: #1a237e !important;
-}
-
-.nav-link {
-    padding: 0.5rem 1rem;
-    color: rgba(255,255,255,0.9) !important;
-    transition: all 0.3s ease;
-}
-
-.nav-link:hover {
-    color: #fff !important;
-    background-color: rgba(255,255,255,0.1);
-    border-radius: 4px;
-}
-
-.dropdown-menu {
-    border: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    border-radius: 8px;
-    margin-top: 10px;
-}
-
-.dropdown-item {
-    padding: 0.7rem 1.2rem;
-    transition: all 0.2s;
-}
-
-.dropdown-item:hover {
-    background-color: #f8f9fa;
-    transform: translateX(5px);
-}
-
-.nav-link.text-danger:hover {
-    background-color: rgba(220,53,69,0.1);
-}
-
-#addRecordButton {
-    margin-left: 1rem;
-    background-color: #00c853;
-    border: none;
-}
-
-#addRecordButton:hover {
-    background-color: #00e676;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-@media (max-width: 991px) {
-    .navbar-nav {
-        padding: 1rem 0;
-    }
-    
-    .nav-link {
-        padding: 0.75rem 1rem;
-    }
-    
-    #addRecordButton {
-        margin: 0.5rem 1rem;
-        width: calc(100% - 2rem);
-    }
-    
-    .dropdown-menu {
-        border: none;
-        box-shadow: none;
-        margin-top: 0;
-        padding: 0;
-        background-color: rgba(255,255,255,0.05);
-    }
-    
-    .dropdown-item {
-        color: rgba(255,255,255,0.9);
-        padding: 0.75rem 2rem;
-    }
-    
-    .dropdown-item:hover {
-        color: #fff;
-        background-color: rgba(255,255,255,0.1);
-    }
-}
-</style>
+</nav> 

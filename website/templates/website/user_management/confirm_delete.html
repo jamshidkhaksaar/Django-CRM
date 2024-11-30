@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Confirm Delete User</h5>
+        </div>
+        <div class="card-body">
+            <p>Are you sure you want to delete the user "{{ object.username }}"?</p>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="text-end">
+                    <a href="{% url 'website:user_list' %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

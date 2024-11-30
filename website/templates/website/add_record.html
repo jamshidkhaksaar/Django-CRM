@@ -1,0 +1,262 @@
+{% load static %}
+<form id="recordForm" method="POST" action="{% url 'website:add_record' %}" class="needs-validation" novalidate>
+    {% csrf_token %}
+    <!-- Transaction Type Selection -->
+    <div class="mb-3">
+        <label for="transaction_type" class="form-label">Transaction Type*</label>
+        <select class="form-select" id="transaction_type" name="transaction_type" required>
+            <option value="">Select Type</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+            <option value="advance">Advance</option>
+            <option value="balance">Balance</option>
+        </select>
+        <div class="invalid-feedback">Please select a transaction type.</div>
+    </div>
+
+    <!-- Common Fields (Initially Hidden) -->
+    <div id="common-fields" style="display: none;">
+        <div class="mb-3">
+            <label for="amount" class="form-label">Amount*</label>
+            <div class="input-group">
+                <input type="number" class="form-control" id="amount" name="amount" step="0.01" required>
+                <span class="input-group-text">AFN</span>
+            </div>
+            <div class="invalid-feedback">Please enter a valid amount.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Description*</label>
+            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+            <div class="invalid-feedback">Please provide a description.</div>
+        </div>
+    </div>
+
+    <!-- Income Fields -->
+    <div id="income-fields" style="display: none;">
+        <div class="mb-3">
+            <label for="income_source" class="form-label">Income Source*</label>
+            <select class="form-select" id="income_source" name="income_source">
+                <option value="">Select Source</option>
+                <option value="salary">Salary</option>
+                <option value="investment">Investment</option>
+                <option value="donation">Donation</option>
+                <option value="grant">Grant</option>
+                <option value="sales">Sales</option>
+                <option value="service">Service Fee</option>
+                <option value="other">Other</option>
+            </select>
+            <div class="invalid-feedback">Please select an income source.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="income_category" class="form-label">Income Category*</label>
+            <select class="form-select" id="income_category" name="income_category">
+                <option value="">Select Category</option>
+                <option value="regular">Regular Income</option>
+                <option value="one-time">One-time Income</option>
+                <option value="recurring">Recurring Income</option>
+            </select>
+            <div class="invalid-feedback">Please select an income category.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="payment_method" class="form-label">Payment Method*</label>
+            <select class="form-select" id="payment_method" name="payment_method">
+                <option value="">Select Payment Method</option>
+                <option value="cash">Cash</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="check">Check</option>
+                <option value="online">Online Payment</option>
+            </select>
+            <div class="invalid-feedback">Please select a payment method.</div>
+        </div>
+    </div>
+
+    <!-- Expense Fields -->
+    <div id="expense-fields" style="display: none;">
+        <div class="mb-3">
+            <label for="expense_category" class="form-label">Expense Category*</label>
+            <select class="form-select" id="expense_category" name="expense_category">
+                <option value="">Select Category</option>
+                <option value="utilities">Utilities</option>
+                <option value="supplies">Office Supplies</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="salary">Salary Payments</option>
+                <option value="rent">Rent</option>
+                <option value="equipment">Equipment</option>
+                <option value="transportation">Transportation</option>
+                <option value="other">Other</option>
+            </select>
+            <div class="invalid-feedback">Please select an expense category.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="expense_type" class="form-label">Expense Type*</label>
+            <select class="form-select" id="expense_type" name="expense_type">
+                <option value="">Select Type</option>
+                <option value="operational">Operational</option>
+                <option value="administrative">Administrative</option>
+                <option value="project">Project-based</option>
+                <option value="emergency">Emergency</option>
+            </select>
+            <div class="invalid-feedback">Please select an expense type.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="vendor" class="form-label">Vendor*</label>
+            <input type="text" class="form-control" id="vendor" name="vendor">
+            <div class="invalid-feedback">Please enter vendor name.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="receipt_number" class="form-label">Receipt Number*</label>
+            <input type="text" class="form-control" id="receipt_number" name="receipt_number">
+            <div class="invalid-feedback">Please enter receipt number.</div>
+        </div>
+    </div>
+
+    <!-- Balance Fields -->
+    <div id="balance-fields" style="display: none;">
+        <div class="mb-3">
+            <label for="balance_type" class="form-label">Balance Type*</label>
+            <select class="form-select" id="balance_type" name="balance_type">
+                <option value="">Select Type</option>
+                <option value="opening">Opening Balance</option>
+                <option value="closing">Closing Balance</option>
+                <option value="adjustment">Balance Adjustment</option>
+                <option value="reconciliation">Bank Reconciliation</option>
+            </select>
+            <div class="invalid-feedback">Please select a balance type.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="account" class="form-label">Account*</label>
+            <input type="text" class="form-control" id="account" name="account">
+            <div class="invalid-feedback">Please enter account details.</div>
+        </div>
+    </div>
+
+    <!-- Advance Fields -->
+    <div id="advance-fields" style="display: none;">
+        <div class="mb-3">
+            <label for="recipient_name" class="form-label">Recipient Name*</label>
+            <input type="text" class="form-control" id="recipient_name" name="recipient_name" required>
+            <div class="invalid-feedback">Please enter the name of the person receiving the advance.</div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="recipient_position" class="form-label">Position/Department</label>
+            <input type="text" class="form-control" id="recipient_position" name="recipient_position">
+            <div class="invalid-feedback">Please enter the recipient's position or department.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="payment_method" class="form-label">Payment Method*</label>
+            <select class="form-select" id="advance_payment_method" name="payment_method" required>
+                <option value="">Select Payment Method</option>
+                <option value="cash">Cash</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="check">Check</option>
+            </select>
+            <div class="invalid-feedback">Please select a payment method.</div>
+        </div>
+    </div>
+
+    <div class="text-end mt-4">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">Cancel</button>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('recordForm');
+    const transactionType = document.getElementById('transaction_type');
+    const commonFields = document.getElementById('common-fields');
+    const incomeFields = document.getElementById('income-fields');
+    const expenseFields = document.getElementById('expense-fields');
+    const advanceFields = document.getElementById('advance-fields');
+    const balanceFields = document.getElementById('balance-fields');
+
+    // Function to toggle required attribute
+    function toggleRequired(elements, required) {
+        elements.forEach(element => {
+            const el = document.getElementById(element);
+            if (el) {
+                el.required = required;
+            }
+        });
+    }
+
+    // Handle transaction type change
+    transactionType.addEventListener('change', function() {
+        // Hide all fields first
+        commonFields.style.display = 'none';
+        incomeFields.style.display = 'none';
+        expenseFields.style.display = 'none';
+        advanceFields.style.display = 'none';
+        balanceFields.style.display = 'none';
+
+        // Remove required from all fields
+        toggleRequired(['income_source', 'income_category', 'payment_method'], false);
+        toggleRequired(['expense_category', 'expense_type', 'vendor', 'receipt_number'], false);
+        toggleRequired(['balance_type', 'account'], false);
+        toggleRequired(['recipient_name', 'advance_payment_method'], false);
+
+        // Show common fields if a type is selected
+        if (this.value) {
+            commonFields.style.display = 'block';
+        }
+
+        // Show and make required based on selected type
+        switch(this.value) {
+            case 'income':
+                incomeFields.style.display = 'block';
+                toggleRequired(['income_source', 'income_category', 'payment_method'], true);
+                break;
+            case 'expense':
+                expenseFields.style.display = 'block';
+                toggleRequired(['expense_category', 'expense_type', 'vendor', 'receipt_number'], true);
+                break;
+            case 'balance':
+                balanceFields.style.display = 'block';
+                toggleRequired(['balance_type', 'account'], true);
+                break;
+            case 'advance':
+                advanceFields.style.display = 'block';
+                toggleRequired(['recipient_name', 'advance_payment_method'], true);
+                break;
+        }
+    });
+
+    // Form validation
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+
+<!-- Success Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMessage"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Error Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="errorToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="errorToastMessage"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div> 

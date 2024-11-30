@@ -30,16 +30,23 @@
                                 <td>{{ record.total_value|floatformat:2 }}</td>
                                 <td>{{ record.date }}</td>
                                 <td>
-                                    <span class="badge 
-                                        {% if record.approval_status == 'rejected' %}bg-danger
-                                        {% else %}bg-warning{% endif %}">
-                                        {{ record.get_approval_status_display }}
+                                    <span class="badge {% if record.approval_status == 'approved' %}bg-success
+                                                       {% elif record.approval_status == 'rejected' %}bg-danger
+                                                       {% elif record.approval_status == 'pending_executive' %}bg-info
+                                                       {% elif record.approval_status == 'pending_chief' %}bg-primary
+                                                       {% else %}bg-warning{% endif %}">
+                                        {% if record.approval_status == 'pending_deputy' %}Pending Deputy Director
+                                        {% elif record.approval_status == 'pending_executive' %}Pending Executive Director
+                                        {% elif record.approval_status == 'pending_chief' %}Pending CEO
+                                        {% elif record.approval_status == 'approved' %}Approved
+                                        {% elif record.approval_status == 'rejected' %}Rejected
+                                        {% else %}Pending{% endif %}
                                     </span>
                                 </td>
                                 <td>
                                     {% if can_approve and record.approval_status == status_to_approve %}
                                         <a href="{% url 'record_approval' record.id %}" class="btn btn-sm btn-success">
-                                            <i class="fas fa-check"></i> Review
+                                            <i class="fas fa-check-circle"></i> Review
                                         </a>
                                     {% endif %}
                                     {% if user.user_type == 'data_entry' or user.is_superuser %}
