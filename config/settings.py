@@ -25,6 +25,9 @@ INSTALLED_APPS = [
     'core',
     'channels',
     'website',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
+    'django_otp.plugins.otp_static',
 ]
 
 MIDDLEWARE = [
@@ -37,9 +40,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'website.middleware.SessionTimeoutMiddleware',
     'website.middleware.IPBlockerMiddleware',
-    'website.middleware.api_auth.APIAuthMiddleware',
-    'website.middleware.rate_limit.RateLimitMiddleware',
-    'website.middleware.security_headers.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -67,19 +67,27 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-# Database
+# Database settings for MySQL
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'django_crm',
+        'USER': 'django_user',
+        'PASSWORD': 'django123',
+        'HOST': 'localhost',
+        'PORT': '3306',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',
+        }
     }
 }
 
 # Cache
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
     }
 }
 
@@ -145,9 +153,9 @@ CHANNEL_LAYERS = {
 CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 
 # Security settings
-SECURE_SSL_REDIRECT = True  # Force HTTPS
-SESSION_COOKIE_SECURE = True  # Cookies only via HTTPS
-CSRF_COOKIE_SECURE = True  # CSRF cookies only via HTTPS
+# SECURE_SSL_REDIRECT = True  # Force HTTPS
+# SESSION_COOKIE_SECURE = True  # Cookies only via HTTPS
+# CSRF_COOKIE_SECURE = True  # CSRF cookies only via HTTPS
 SECURE_BROWSER_XSS_FILTER = True  # XSS protection
 SECURE_CONTENT_TYPE_NOSNIFF = True  # Content type sniffing protection
 X_FRAME_OPTIONS = 'DENY'  # Clickjacking protection

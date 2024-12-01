@@ -1,18 +1,21 @@
 {% extends 'base.html' %}
+
 {% block content %}
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-6 offset-md-3">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
             <div class="card">
-                <div class="card-header">
-                    <h3>Delete User</h3>
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Delete User</h5>
                 </div>
                 <div class="card-body">
-                    <p>Are you sure you want to delete "{{ object.username }}"?</p>
+                    <p class="mb-4">Are you sure you want to delete the user "{{ object.username }}"?</p>
                     <form method="post">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Confirm Delete</button>
-                        <a href="{% url 'user_list' %}" class="btn btn-secondary">Cancel</a>
+                        <div class="text-end">
+                            <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-danger">Delete User</button>
+                        </div>
                     </form>
                 </div>
             </div>

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Set Up Two-Factor Authentication</h4>
+                </div>
+                <div class="card-body">
+                    <p>Scan this QR code with your authenticator app:</p>
+                    <div class="text-center mb-4">
+                        <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+                    </div>
+                    <p>Or manually enter this code in your authenticator app:</p>
+                    <div class="alert alert-info text-center">
+                        <code class="fs-5">{{ secret_key }}</code>
+                    </div>
+                    <div class="text-center">
+                        <a href="{% url 'accounts:verify_2fa' %}" class="btn btn-primary">
+                            Continue to Verification
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,7 +1,7 @@
 {% load static %}
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'home' %}">
+        <a class="navbar-brand" href="{% url 'website:home' %}">
             <img src="{% static 'website/images/LOGO.png' %}" alt="NSDO Logo" height="30">
             NSDO Financial Control
         </a>
@@ -12,15 +12,26 @@
             <ul class="navbar-nav me-auto">
                 {% if user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">
+                        <a class="nav-link" href="{% url 'website:home' %}">
                             <i class="fas fa-home"></i> Home
                         </a>
                     </li>
                     {% if user.is_staff %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'add_record' %}">
+                            <a class="nav-link" href="{% url 'website:add_record' %}">
                                 <i class="fas fa-plus"></i> Add Record
                             </a>
+                        </li>
+                    {% endif %}
+                    {% if user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:user_list' %}">
+                                <i class="fas fa-users"></i> User Management
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <span class="nav-link text-warning">Not a superuser</span>
                         </li>
                     {% endif %}
                 {% endif %}
@@ -38,14 +49,17 @@
                             <i class="fas fa-user"></i> {{ user.username }}
                         </a>
                         <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="{% url 'logout' %}">
+                            <a class="dropdown-item" href="{% url 'accounts:profile' %}">
+                                <i class="fas fa-user-circle"></i> Profile
+                            </a>
+                            <a class="dropdown-item" href="{% url 'accounts:logout' %}">
                                 <i class="fas fa-sign-out-alt"></i> Logout
                             </a>
                         </div>
                     </li>
                 {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login' %}">
+                        <a class="nav-link" href="{% url 'accounts:login' %}">
                             <i class="fas fa-sign-in-alt"></i> Login
                         </a>
                     </li>

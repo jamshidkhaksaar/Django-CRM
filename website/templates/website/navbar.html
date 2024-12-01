@@ -216,10 +216,10 @@
                     </li>
 
                     <!-- User Management -->
-                    {% if user.user_type == 'admin' %}
+                    {% if user.is_superuser %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'website:user_list' %}">
-                            <i class="fas fa-users-cog me-1"></i> User Management
+                        <a class="nav-link" href="{% url 'accounts:user_list' %}">
+                            <i class="fas fa-users me-1"></i> User Management
                         </a>
                     </li>
                     {% endif %}
@@ -284,7 +284,7 @@
                     </li>
                 {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login' %}">
+                        <a class="nav-link" href="{% url 'accounts:login' %}">
                             <i class="fas fa-sign-in-alt me-1"></i> Login
                         </a>
                     </li>

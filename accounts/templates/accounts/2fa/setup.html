@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Two-Factor Authentication Setup</h2>
+    
+    {% if device and not device.confirmed %}
+        <p>Scan this QR code with your authenticator app:</p>
+        {{ qr_code|safe }}
+        
+        <p>Or manually enter this key: {{ secret_key }}</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Enter verification code:</label>
+                <input type="text" name="verification_code" class="form-control">
+            </div>
+            <button type="submit" name="verify_code" class="btn btn-primary">Verify</button>
+        </form>
+    
+    {% elif not device %}
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" name="enable_2fa" class="btn btn-primary">Enable 2FA</button>
+        </form>
+    
+    {% else %}
+        <p>2FA is currently enabled</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" name="disable_2fa" class="btn btn-danger">Disable 2FA</button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %} 

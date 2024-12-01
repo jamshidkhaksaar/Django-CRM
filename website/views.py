@@ -837,10 +837,18 @@ def advance_repayment(request, pk):
 
 @login_required
 def user_profile(request):
-    """Display user profile."""
-    return render(request, 'website/user_management/profile.html', {
-        'user': request.user
-    })
+    # Get user statistics
+    total_records = Record.objects.filter(created_by=request.user).count()
+    pending_approvals = Record.objects.filter(status='pending').count()
+    approved_records = Record.objects.filter(status='approved', created_by=request.user).count()
+    
+    context = {
+        'total_records': total_records,
+        'pending_approvals': pending_approvals,
+        'approved_records': approved_records,
+        'user': request.user,
+    }
+    return render(request, 'website/user_management/profile.html', context)
 
 @login_required
 def profile_edit(request):
@@ -964,3 +972,12 @@ def delete_all_records(request):
             messages.error(request, f"Error deleting records: {str(e)}")
     
     return redirect('website:home')
+
+@login_required
+def profile_view(request):
+    context = {
+        'total_transactions': Transaction.objects.filter(user=request.user).count(),
+        'pending_transactions': Transaction.objects.filter(user=request.user, status='pending').count(),
+        'completed_transactions': Transaction.objects.filter(user=request.user, status='completed').count(),
+    }
+    return render(request, 'accounts/profile.html', context)
