@@ -168,6 +168,16 @@
                                     <i class="fas fa-folder me-2"></i>My Records
                                 </a>
                             </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'website:advance_records' %}">
+                                    <i class="fas fa-forward me-2"></i>Advance Records
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'website:payable_records' %}">
+                                    <i class="fas fa-file-invoice me-2"></i>Payable Records
+                                </a>
+                            </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item" href="{% url 'website:balance_entries' %}">
@@ -182,11 +192,6 @@
                             <li>
                                 <a class="dropdown-item" href="{% url 'website:expense_records' %}">
                                     <i class="fas fa-arrow-down me-2"></i>Expense Records
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{% url 'website:advance_records' %}">
-                                    <i class="fas fa-forward me-2"></i>Advance Records
                                 </a>
                             </li>
                             <li><hr class="dropdown-divider"></li>
@@ -253,7 +258,7 @@
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'website:user_profile' %}">
+                                <a class="dropdown-item" href="{% url 'accounts:profile' %}">
                                     <i class="fas fa-user me-2"></i>My Profile
                                 </a>
                             </li>
@@ -268,7 +273,7 @@
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'website:password_change' %}">
+                                <a class="dropdown-item" href="{% url 'accounts:change_password' user.pk %}">
                                     <i class="fas fa-key me-2"></i>Change Password
                                 </a>
                             </li>

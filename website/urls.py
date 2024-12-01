@@ -13,6 +13,7 @@ urlpatterns = [
     path('records/income/', views.IncomeRecordListView.as_view(), name='income_records'),
     path('records/expense/', views.ExpenseRecordListView.as_view(), name='expense_records'),
     path('records/advance/', views.AdvanceRecordListView.as_view(), name='advance_records'),
+    path('records/payable/', views.PayableRecordListView.as_view(), name='payable_records'),
     path('my-records/', views.MyRecordListView.as_view(), name='my_records'),
     path('approved-records/', views.ApprovedRecordListView.as_view(), name='approved_records'),
     path('rejected-records/', views.RejectedRecordListView.as_view(), name='rejected_records'),
@@ -35,8 +36,5 @@ urlpatterns = [
     path('users/<int:pk>/permissions/', views.UserPermissionsView.as_view(), name='user_permissions'),
     path('activity/', views.UserActivityListView.as_view(), name='activity_list'),
     path('record/<int:pk>/forward/', views.forward_to_deputy, name='forward_to_deputy'),
-    path('profile/', views.user_profile, name='user_profile'),
-    path('profile/edit/', views.profile_edit, name='profile_edit'),
-    path('profile/password/', views.password_change, name='password_change'),
     path('delete-all-records/', views.delete_all_records, name='delete_all_records'),
 ]

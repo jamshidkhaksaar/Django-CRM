@@ -127,15 +127,25 @@ def log_user_activity(user, activity_type, description, record=None, ip_address=
     )
 
 def get_client_ip(request):
-    """
-    Get client IP address from request
-    """
+    """Get the client's IP address from the request"""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0]
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
+
+def log_activity(request, activity_type, description, record=None):
+    """Log user activity with IP address"""
+    from .models import UserActivity
+    
+    UserActivity.objects.create(
+        user=request.user,
+        activity_type=activity_type,
+        description=description,
+        record=record,
+        ip_address=get_client_ip(request)
+    )
 
 def mask_sensitive_data(data):
     """

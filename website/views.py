@@ -26,11 +26,21 @@ from django.utils import timezone
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
+from .utils import log_activity, get_client_ip
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 User = get_user_model()
 
 @login_required(login_url='/accounts/login/')
 def home(request):
+    # Log activity with IP
+    log_activity(
+        request=request,
+        activity_type='view_home',
+        description='Viewed home page'
+    )
+    
     # Get all records
     all_records = Record.objects.all().order_by('-created_at')
     
@@ -94,6 +104,13 @@ def home(request):
 
 @login_required
 def dashboard(request):
+    # Log activity with IP
+    log_activity(
+        request=request,
+        activity_type='view_dashboard',
+        description='Viewed dashboard'
+    )
+    
     # Get approved records only
     approved_records = Record.objects.filter(status='approved')
     
@@ -230,6 +247,16 @@ class UserSettingsView(ActivityTrackingMixin, LoginRequiredMixin, UpdateView):
     def get_object(self, queryset=None):
         return UserSettings.objects.get_or_create(user=self.request.user)[0]
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        # Log activity with IP
+        log_activity(
+            request=self.request,
+            activity_type='update_settings',
+            description='Updated user settings'
+        )
+        return response
+
 class RecordListView(LoginRequiredMixin, ListView):
     model = Record
     template_name = 'website/record_list.html'
@@ -237,6 +264,12 @@ class RecordListView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
+        # Log activity with IP
+        log_activity(
+            request=self.request,
+            activity_type='view_records',
+            description='Viewed records list'
+        )
         return Record.objects.all().order_by('-created_at')
 
 class BalanceRecordListView(RecordListView):
@@ -254,6 +287,10 @@ class ExpenseRecordListView(RecordListView):
 class AdvanceRecordListView(RecordListView):
     def get_queryset(self):
         return super().get_queryset().filter(transaction_type='advance')
+
+class PayableRecordListView(RecordListView):
+    def get_queryset(self):
+        return super().get_queryset().filter(transaction_type='payable')
 
 class MyRecordListView(RecordListView):
     def get_queryset(self):
@@ -277,6 +314,15 @@ def record_detail(request, pk):
     Display detailed information about a specific record.
     """
     record = get_object_or_404(Record, pk=pk)
+    
+    # Log activity with IP
+    log_activity(
+        request=request,
+        activity_type='view_record_detail',
+        description=f'Viewed record detail: {record.reference_number}',
+        record=record
+    )
+    
     context = {
         'record': record,
     }
@@ -296,8 +342,11 @@ def record_approval(request, pk):
         comments = request.POST.get('comments', '')
         
         if status in ['approved', 'rejected']:
+            record.status = status
+            record.save()
+            
             # Create approval record
-            approval = RecordApproval.objects.create(
+            RecordApproval.objects.create(
                 record=record,
                 user=request.user,
                 approval_level=request.user.user_type,
@@ -305,42 +354,7 @@ def record_approval(request, pk):
                 comments=comments
             )
             
-            # Update record status based on user type and decision
-            if status == 'approved':
-                if request.user.user_type == 'deputy_director':
-                    record.status = 'pending_executive'
-                    record.deputy_approved = True
-                    next_approver_type = 'executive_director'
-                elif request.user.user_type == 'executive_director':
-                    record.status = 'pending_ceo'
-                    record.executive_approved = True
-                    next_approver_type = 'chief_executive'
-                elif request.user.user_type == 'chief_executive':
-                    record.status = 'approved'
-                    record.ceo_approved = True
-                    next_approver_type = None
-            else:  # rejected
-                if request.user.user_type == 'deputy_director':
-                    record.status = 'rejected_deputy'
-                elif request.user.user_type == 'executive_director':
-                    record.status = 'rejected_executive'
-                elif request.user.user_type == 'chief_executive':
-                    record.status = 'rejected_ceo'
-            
-            record.save()
-            
-            # Create notification for next approver or record creator
-            if status == 'approved' and next_approver_type:
-                next_approvers = User.objects.filter(user_type=next_approver_type)
-                for approver in next_approvers:
-                    Notification.objects.create(
-                        user=approver,
-                        title=f'Record Needs Your Approval',
-                        message=f'Record {record.reference_number} has been approved by {request.user.get_full_name()} and needs your review.',
-                        record=record
-                    )
-            
-            # Notify record creator
+            # Create notification for record creator
             Notification.objects.create(
                 user=record.created_by,
                 title=f'Record {status.title()}',
@@ -348,9 +362,9 @@ def record_approval(request, pk):
                 record=record
             )
             
-            # Create user activity
-            UserActivity.objects.create(
-                user=request.user,
+            # Log user activity with IP address
+            log_activity(
+                request=request,
                 activity_type='record_approve' if status == 'approved' else 'record_reject',
                 description=f'{status.title()} record: {record.reference_number}',
                 record=record
@@ -428,6 +442,14 @@ def add_record(request):
                 balance_type=balance_type,
                 created_by=request.user,
                 status='pending'
+            )
+            
+            # Log activity with IP
+            log_activity(
+                request=request,
+                activity_type='create_record',
+                description=f'Created new {transaction_type} record: {record.reference_number}',
+                record=record
             )
             
             print(f"Record saved successfully: {record.id}")
@@ -688,7 +710,7 @@ class UserActivityListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        """Return activities filtered by user if specified."""
+        """Return all activities with proper ordering and filtering."""
         queryset = UserActivity.objects.all().select_related('user', 'record')
         
         # Filter by user if specified in URL parameters
@@ -701,6 +723,15 @@ class UserActivityListView(LoginRequiredMixin, ListView):
         if activity_type:
             queryset = queryset.filter(activity_type=activity_type)
             
+        # Ensure IP address is captured for viewing activities
+        ip_address = get_client_ip(self.request)
+        log_activity(
+            request=self.request,
+            activity_type='view_activity_log',
+            description='Viewed activity log',
+            record=None
+        )
+        
         return queryset.order_by('-created_at')
     
     def get_context_data(self, **kwargs):
@@ -834,54 +865,6 @@ def advance_repayment(request, pk):
     }
     
     return render(request, 'website/advance_repayment.html', context)
-
-@login_required
-def user_profile(request):
-    # Get user statistics
-    total_records = Record.objects.filter(created_by=request.user).count()
-    pending_approvals = Record.objects.filter(status='pending').count()
-    approved_records = Record.objects.filter(status='approved', created_by=request.user).count()
-    
-    context = {
-        'total_records': total_records,
-        'pending_approvals': pending_approvals,
-        'approved_records': approved_records,
-        'user': request.user,
-    }
-    return render(request, 'website/user_management/profile.html', context)
-
-@login_required
-def profile_edit(request):
-    """Edit user profile."""
-    if request.method == 'POST':
-        form = UserEditForm(request.POST, instance=request.user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Profile updated successfully.')
-            return redirect('website:user_profile')
-    else:
-        form = UserEditForm(instance=request.user)
-    
-    return render(request, 'website/user_management/profile_edit.html', {
-        'form': form
-    })
-
-@login_required
-def password_change(request):
-    """Change user password."""
-    if request.method == 'POST':
-        form = PasswordChangeForm(user=request.user, data=request.POST)
-        if form.is_valid():
-            form.save()
-            update_session_auth_hash(request, form.user)
-            messages.success(request, 'Your password was successfully updated!')
-            return redirect('website:user_profile')
-    else:
-        form = PasswordChangeForm(user=request.user)
-    
-    return render(request, 'website/user_management/password_change.html', {
-        'form': form
-    })
 
 @login_required
 def payable_repayment(request, pk):
